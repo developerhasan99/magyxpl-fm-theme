@@ -1,0 +1,52 @@
+{% comment %}
+  Search bar above the collection grid (sections/main-collection-product-grid.liquid, setting
+  "Show the search bar"). Filters the grid by scent name, number, brand, inspiration and tags;
+  logic in assets/collection-search.js. No form and no name attribute: nothing reaches the URL
+  or facets.js.
+
+  Premium port (WP-D): one search on the page. The tryscent.eu behaviour stays (collection-search.js reads
+  the mgx-csearch__* classes and data-mgx-*), the look is FM's pm-csearch (assets/pm-collection-search.css;
+  collection-search.css is no longer loaded). Each element carries both class names; the JS-built
+  "Clear search" button (mgx-csearch__reset) is styled in pm-collection-search.css too.
+  FM's pm-collection-search snippet / JS and pm-collection-grid-loader.js were dropped (one search, one loader).
+
+  Accepts:
+  - st: section.settings of the grid section
+  - section_id: section.id
+{% endcomment %}
+{{ 'pm-collection-search.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'collection-search.js' | asset_url }}" defer="defer"></script>
+
+<div
+  class="mgx-csearch pm-csearch page-width"
+  data-mgx-csearch
+  data-results-text="{{ st.search_results_text | escape }}"
+  data-result-text="{{ st.search_result_text | escape }}"
+  data-empty-text="{{ st.search_empty_text | escape }}"
+  data-loading-text="{{ st.search_loading_text | escape }}"
+  data-clear-label="{{ st.search_clear_label | escape }}">
+  <div class="mgx-csearch__inner pm-csearch__inner" role="search">
+    {%- assign pm_search_label = 'premium.general.search' | t -%}
+    <label class="visually-hidden" for="MgxCollectionSearch-{{ section_id }}">
+      {{- st.search_placeholder | default: pm_search_label | escape -}}
+    </label>
+    <div class="mgx-csearch__field pm-csearch__field">
+      {% render 'pm-icon', icon: 'search', size: 18, stroke: 1.8, class: 'mgx-csearch__ico pm-csearch__ico' %}
+      <input
+        id="MgxCollectionSearch-{{ section_id }}"
+        class="mgx-csearch__input pm-csearch__input"
+        type="search"
+        placeholder="{{ st.search_placeholder | escape }}"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        aria-controls="product-grid">
+      <button class="mgx-csearch__clear pm-csearch__clear" type="button" aria-label="{{ st.search_clear_label | escape }}" hidden>
+        {% render 'pm-icon', icon: 'close', size: 16, stroke: 1.8 %}
+      </button>
+    </div>
+    <p class="mgx-csearch__status pm-csearch__status" role="status" aria-live="polite" aria-atomic="true"></p>
+  </div>
+</div>

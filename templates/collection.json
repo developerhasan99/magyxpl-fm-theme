@@ -1,0 +1,296 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "collection_hero_P7jePR": {
+      "type": "collection-hero",
+      "name": "Collection Hero",
+      "settings": {
+        "layout": "compact",
+        "show_breadcrumbs": true,
+        "breadcrumb_home_label": "Strona główna",
+        "show_rating_badge": false,
+        "rating_text": "Sprawdzone przez ponad 10 000 miłośników zapachów"
+      }
+    },
+    "fuel01_byo": {
+      "type": "fuel01-byo",
+      "blocks": {
+        "perk_hours": {
+          "type": "fuel01_perk",
+          "settings": {
+            "icon_asset": "fuel01-perk-hours.png",
+            "title": "Trwałość do 12 godzin",
+            "text": "Zapach na cały dzień."
+          }
+        },
+        "perk_guarantee": {
+          "type": "fuel01_perk",
+          "settings": {
+            "icon_asset": "fuel01-perk-guarantee.png",
+            "title": "60 dni gwarancji",
+            "text": "Zwrot pieniędzy w ciągu 60 dni."
+          }
+        },
+        "perk_quality": {
+          "type": "fuel01_perk",
+          "settings": {
+            "icon_asset": "fuel01-perk-quality.png",
+            "title": "Wyprodukowano w Europie",
+            "text": "Zgodnie z europejskimi normami perfumeryjnymi."
+          }
+        },
+        "perk_eu": {
+          "type": "fuel01_perk",
+          "settings": {
+            "icon_asset": "fuel01-perk-eu.png",
+            "title": "Bez ftalanów i parabenów",
+            "text": "Czysty skład."
+          }
+        }
+      },
+      "block_order": [
+        "perk_hours",
+        "perk_guarantee",
+        "perk_quality",
+        "perk_eu"
+      ],
+      "settings": {
+        "heading": "Skomponuj własny zestaw",
+        "subheading": "3 × 100 ml perfum, czwarty zapach gratis",
+        "subheading_2": "Wybierz ulubione zapachy i oszczędzaj więcej.",
+        "slot_label": "Wybierz zapach",
+        "free_slot_label": "Twój 4. zapach",
+        "free_slot_sub": "GRATIS",
+        "free_pill_label": "GRATIS",
+        "counter_text": "Wybrano [selected] z [total]",
+        "hint_text": "Dodaj jeszcze 1 zapach, a kolejny dostaniesz gratis!",
+        "hint_text_one": "Dodaj jeszcze 1 zapach, a kolejny dostaniesz gratis!",
+        "done_text": "Twój zestaw jest gotowy!",
+        "total_label": "Cena regularna (4 × 100 ml)",
+        "discount_label": "Rabat (1 zapach gratis)",
+        "price_label": "Twoja cena",
+        "savings_label": "Oszczędzasz",
+        "search_placeholder": "Znajdź swój zapach",
+        "cta_label": "Dodaj",
+        "cta_next_label": "Dodaj w kroku [n]",
+        "cta_added_label": "Dodano w kroku [n]",
+        "empty_text": "Żaden zapach nie pasuje do wyszukiwania.",
+        "reveal_label": "Zobacz więcej!",
+        "sticky_price_label": "Twoja cena",
+        "sticky_cta_view": "Zobacz swój zestaw ([count])",
+        "sticky_cta_checkout": "Przejdź do kasy"
+      }
+    },
+    "banner": {
+      "type": "main-collection-banner",
+      "disabled": true,
+      "settings": {
+        "show_collection_description": false,
+        "show_collection_image": false,
+        "color_scheme": "scheme-2"
+      }
+    },
+    "popular_products_F6w4h9": {
+      "type": "popular-products",
+      "disabled": true,
+      "name": "Popular Products",
+      "settings": {
+        "background_color": "#ffffff",
+        "heading": "Kupuj więcej i oszczędzaj!",
+        "collection": "bundle-save",
+        "show_all_button_text": "Zobacz więcej!",
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    },
+    "product-grid": {
+      "type": "main-collection-product-grid",
+      "blocks": {
+        "featured_product_WYiyqw": {
+          "type": "featured_product",
+          "disabled": true,
+          "settings": {
+            "position": 1,
+            "product": "3x-100ml-perfume-bottles-1"
+          }
+        }
+      },
+      "block_order": [
+        "featured_product_WYiyqw"
+      ],
+      "settings": {
+        "products_per_page": 16,
+        "columns_desktop": 4,
+        "columns_mobile": "2",
+        "color_scheme": "scheme-1",
+        "image_ratio": "square",
+        "image_shape": "default",
+        "show_secondary_image": false,
+        "show_vendor": false,
+        "show_rating": true,
+        "quick_add": "none",
+        "enable_filtering": true,
+        "filter_type": "drawer",
+        "enable_sorting": true,
+        "toolbar_style": "pills",
+        "enable_search": true,
+        "search_placeholder": "Szukaj: marka, zapach lub numer",
+        "search_results_text": "Wyniki dla „[query]”: [count]",
+        "search_result_text": "Wyniki dla „[query]”: 1",
+        "search_empty_text": "Brak wyników dla „[query]”. Wpisz markę albo nazwę oryginału.",
+        "search_loading_text": "Szukamy we wszystkich zapachach…",
+        "search_clear_label": "Wyczyść wyszukiwanie",
+        "padding_top": 0,
+        "padding_bottom": 48
+      }
+    },
+    "image_with_text_guarantee": {
+      "type": "image-with-text",
+      "blocks": {
+        "caption_pm": {
+          "type": "caption",
+          "settings": {
+            "caption": "60-dniowa gwarancja zwrotu pieniędzy",
+            "text_style": "caption-with-letter-spacing",
+            "text_size": "small"
+          }
+        },
+        "heading_pm": {
+          "type": "heading",
+          "settings": {
+            "heading": "Wypróbuj, potem zdecyduj",
+            "heading_size": "h2"
+          }
+        },
+        "text_pm": {
+          "type": "text",
+          "settings": {
+            "text": "<p>W MagyX tworzymy zapachy, w których masz czuć się świetnie. Dlatego dajemy 60 dni gwarancji zwrotu pieniędzy: kupujesz bez ryzyka.</p><p>Jeśli zapach Cię nie zachwyci, odeślij go w ciągu 60 dni, a zwrócimy Ci pieniądze. Bez zbędnych formalności i bez stresu, aż znajdziesz zapach, który naprawdę pokochasz.</p>",
+            "text_style": "body"
+          }
+        },
+        "button_pm": {
+          "type": "button",
+          "settings": {
+            "button_label": "Zasady zwrotów",
+            "button_link": "/policies/refund-policy",
+            "button_style_secondary": true
+          }
+        }
+      },
+      "block_order": [
+        "caption_pm",
+        "heading_pm",
+        "text_pm",
+        "button_pm"
+      ],
+      "name": "Guarantee",
+      "settings": {
+        "image": "shopify://shop_images/MAGYX_Site_02_1.webp",
+        "video": "shopify://files/videos/MAGYX-SITE02.mp4",
+        "height": "medium",
+        "desktop_image_width": "large",
+        "layout": "image_first",
+        "image_behavior": "none",
+        "content_layout": "overlap",
+        "desktop_content_position": "middle",
+        "desktop_content_alignment": "left",
+        "mobile_content_alignment": "left",
+        "section_color_scheme": "scheme-1",
+        "color_scheme": "scheme-1",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "faq_collection": {
+      "type": "faq-section",
+      "blocks": {
+        "faq_row_match": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy Wasze perfumy pachną tak samo jak oryginały, którymi są inspirowane?",
+            "icon": "none",
+            "row_content": "<p>Nasze perfumy są inspirowane znanymi zapachami: mają te same nuty i należą do tej samej rodziny zapachowej. To nie są kopie ani oryginały, tylko własne interpretacje, które oddają charakter zapachu za ułamek ceny.</p>",
+            "page": ""
+          }
+        },
+        "faq_row_quality": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Skąd tak dobra jakość przy tak niskiej cenie?",
+            "icon": "none",
+            "row_content": "<p>Skupiamy się na samym zapachu. Nie inwestujemy w luksusowe flakony, wyszukane opakowania, drogie lokale ani kosztowne współprace z influencerami. Nasze kompozycje zawierają 20% olejków zapachowych (Eau de Parfum), a na każdy zakup dajemy 60 dni gwarancji zwrotu pieniędzy.</p>",
+            "page": ""
+          }
+        },
+        "faq_row_longevity": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Jak długo utrzymuje się zapach?",
+            "icon": "none",
+            "row_content": "<p>Trwałość perfum zależy od indywidualnych cech skóry. Dzięki starannie dobranemu stężeniu olejków zapach utrzymuje się od <strong>8 do 12 godzin</strong>.</p><p>Aby przedłużyć trwałość zapachu, nakładaj perfumy na skórę, a nie na ubrania. Z czasem zapach rozwija się, odsłaniając głębsze nuty bazy.</p>",
+            "page": ""
+          }
+        },
+        "faq_row_returns": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy mogę zwrócić perfumy, jeśli zapach mi nie pasuje?",
+            "icon": "none",
+            "row_content": "<p>Tak. Masz 60 dni gwarancji zwrotu pieniędzy. Jeśli zapach nie jest dla Ciebie, odeślij zamówienie w ciągu 60 dni, a zwrócimy Ci pieniądze. Możesz najpierw spokojnie wypróbować zapach.</p>",
+            "page": ""
+          }
+        },
+        "faq_row_vegan": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy Wasze perfumy są wegańskie i nietestowane na zwierzętach?",
+            "icon": "none",
+            "row_content": "<p>Tak. Nasze perfumy są <strong>wegańskie</strong> i <strong>nietestowane na zwierzętach</strong>, bez ftalanów i parabenów.</p>",
+            "page": ""
+          }
+        }
+      },
+      "block_order": [
+        "faq_row_match",
+        "faq_row_quality",
+        "faq_row_longevity",
+        "faq_row_returns",
+        "faq_row_vegan"
+      ],
+      "name": "FAQ Section",
+      "settings": {
+        "caption": "",
+        "heading": "Najczęściej zadawane pytania",
+        "heading_size": "h1",
+        "heading_alignment": "center",
+        "closing_text": "<p>Masz więcej pytań? <a href=\"/pages/contact\">Napisz do nas</a>.</p>",
+        "layout": "row",
+        "container_color_scheme": "scheme-1",
+        "color_scheme": "scheme-5",
+        "open_first_collapsible_row": false,
+        "image_ratio": "adapt",
+        "desktop_layout": "image_second",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    }
+  },
+  "order": [
+    "collection_hero_P7jePR",
+    "fuel01_byo",
+    "banner",
+    "popular_products_F6w4h9",
+    "product-grid",
+    "image_with_text_guarantee",
+    "faq_collection"
+  ]
+}

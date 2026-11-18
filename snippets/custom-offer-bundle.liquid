@@ -1,0 +1,355 @@
+{% comment %} #atc_scroll_target: the buy box anchor, as on the perfume pages (quantity-breaker, reactive-atc); stacks-up's button and the UGC row's card scroll here. Its scroll offset comes with shipping-badges below. {% endcomment %}
+{%- comment -%}
+  skip_head: true when the template has FM's bundle_content / bundle_price blocks above this one (1:1 FM pass);
+  the anchor stays, the content line and price block are not rendered twice.
+{%- endcomment -%}
+{%- if skip_head -%}
+<div id="atc_scroll_target"></div>
+{%- else -%}
+<div id="atc_scroll_target" class="flex items-center gap-1 text-sm">
+  <span>{{ product.metafields.custom.bundle_product_content }}</span>
+</div>
+
+<div
+  id="price-{{ section.id }}"
+  class="bundle-price-pdp"
+  role="status"
+  {{ block.shopify_attributes }}>
+  {% if product.compare_at_price > product.price %}
+    {% assign discount = product.compare_at_price | minus: product.price %}
+    {% assign discount_percent = discount | times: 100 | divided_by: product.compare_at_price | round %}
+  {% endif %}
+
+  <div class="flex flex-wrap items-center gap-x-3 text-xl">
+    {% if product.compare_at_price > product.price %}
+      <span class="mgx-text-accent font-bold text-[24px] discount-percent">
+        -{{ discount_percent }}%
+      </span>
+    {% endif %}
+
+    <span class="text-black font-bold product-price">
+      {{ product.price | money }}
+    </span>
+
+    {% if product.compare_at_price > product.price %}
+      <span class="mgx-text-muted font-semibold line-through compare-price">
+        Cena oryginałów: {{ product.compare_at_price | money }}
+      </span>
+    {% endif %}
+  </div>
+  <div class="text-lg font-semibold text-black leading-normal">
+    To tylko {{ product.price | divided_by: product.metafields.custom.choose_your_fragrances_options | money }} za flakon.
+  </div>
+</div>
+{%- endif -%}
+
+{% assign bundle_collection = collections['bestsellers'] %}
+{% assign product_count = product.metafields.custom.choose_your_fragrances_options %}
+{% assign dropdown_ml = product.metafields.custom.select_bundle_dropdown_ml | default: "50" %}
+{% assign bundle_ml = dropdown_ml | append: "ml" %}
+{% assign bundle_size_token = dropdown_ml | append: '' | downcase | strip | replace: ' ', '' | remove: 'ml' | append: 'ml' %}
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% assign fixed_bundle_products = product.metafields.custom.fixed_bundle_products.value %}
+
+<style>
+  [x-cloak] {
+    display: none !important;
+  }
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+{%- liquid
+  assign next_bundle = product.metafields.custom.next_bundle
+  if next_bundle != blank
+    assign next_bundle_product = next_bundle.value
+    assign next_size = next_bundle_product.metafields.custom.select_bundle_dropdown_ml
+    assign price_difference = next_bundle_product.price | minus: product.price | money
+  endif
+-%}
+
+{% if next_bundle != blank %}
+  <div class="bg-white border mgx-border rounded-lg px-4 py-2.5 mb-4">
+    <div class="flex items-center gap-2 text-black">
+      <svg
+        class="size-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+      </svg>
+      <span>Wybierz większą pojemność:
+        <a href="{{ next_bundle_product.url }}" class="ml-auto font-medium mgx-text mgx-underline-hover whitespace-nowrap transition-colors">
+          {{ next_size }} ML za jedyne {{ price_difference }} więcej.</a>
+      </span>
+    </div>
+  </div>
+{% endif %}
+
+<div x-data>
+  <div class="grid grid-cols-1 gap-2 mb-4">
+    <template x-for="index in ({{ product_count }})" :key="index">
+      <div
+        {% unless product.tags contains 'fixed_bundle' %}
+          @click="$store.bundleBuilder.showModal = true"
+        {% endunless %}
+        class="bg-white border-2 border-solid mgx-border flex items-center p-[7px] rounded-xl gap-2 cursor-pointer relative transition duration-300 hover:border-black"
+        :class="{ 'mgx-selected' : typeof $store.bundleBuilder.selectedProducts[index - 1] !== 'undefined'}">
+        <div x-text="index" class="mgx-check--on size-6 rounded-lg text-white font-bold text-xs flex items-center justify-center shrink-0"></div>
+        <div x-show="!$store.bundleBuilder.selectedProducts[index - 1]" class="flex min-w-0 gap-2 items-center flex-grow">
+            {% render 'perfume-icon'
+            , size: 40 %}
+            <div class="min-w-0 flex-1">
+              <div class="text-sm mgx-text-muted overflow-hidden whitespace-nowrap [text-overflow:ellipsis]">
+                Wybierz swój zapach
+              </div>
+            </div>
+            <span class="ml-auto shrink-0 mgx-text-muted"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+        </div>
+        <div x-show="$store.bundleBuilder.selectedProducts[index - 1]" class="flex min-w-0 gap-2 items-center flex-grow">
+            <img
+                class="object-cover rounded"
+                :src="$store.bundleBuilder.selectedProducts[index - 1]?.image"
+                :alt="$store.bundleBuilder.selectedProducts[index - 1]?.name"
+                width="40"
+                height="40"
+            >
+            <div class="text-left min-w-0 flex-1 flex flex-col gap-1">
+                <div class="font-bold text-sm leading-tight text-black line-clamp-1" x-text="$store.bundleBuilder.selectedProducts[index - 1]?.name"></div>
+                <div class="text-xs line-clamp-1 mgx-text-muted"><span x-text="$store.bundleBuilder.selectedProducts[index - 1]?.inspiration_name"></span> - <span x-text="$store.bundleBuilder.selectedProducts[index - 1]?.variant.title"></span></div>
+            </div>
+            {% unless product.tags contains 'fixed_bundle' %}
+              <button @click.stop.prevent="$store.bundleBuilder.removeProduct(index - 1)" class="ml-auto size-7 shrink-0 bg-red-50 flex items-center justify-center rounded text-xs cursor-pointer border-0">
+                  {% render 'icon-trash' %}
+              </button>
+            {% else %}
+            {% endunless %}
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <button
+    x-data
+    @click="$store.bundleBuilder.doATCandCheckout()"
+    :disabled="$store.bundleBuilder.selectedProducts.length < {{ product_count }} || $store.bundleBuilder.addingToCart"
+    :class="{
+        'opacity-50 cursor-not-allowed': $store.bundleBuilder.selectedProducts.length < {{ product_count }},
+        'cursor-pointer': $store.bundleBuilder.selectedProducts.length >= {{ product_count }}
+      }"
+    class="w-full flex gap-2 flex-wrap items-center !mb-0 text-lg font-bold !py-3 !px-2 rounded-full button mgx-btn-primary transition-colors shadow-xl tracking-normal button--full-width"
+  >
+    <span x-show="$store.bundleBuilder.selectedProducts.length < {{ product_count }}" x-text="'Wybierz jeszcze: ' + ({{ product_count }} - $store.bundleBuilder.selectedProducts.length) + ' szt.'"></span>
+    <span x-show="$store.bundleBuilder.selectedProducts.length === {{ product_count }}">Kup teraz</span>
+    <span class="size-2 rounded-full inline-block bg-white/50"></span>
+    <span class="current-price">{{ selected_variant.price | money }}</span>
+    <div x-show="$store.bundleBuilder.addingToCart" class="loading__spinner">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="spinner"
+        viewBox="0 0 66 66">
+        <circle
+          stroke-width="6"
+          cx="33"
+          cy="33"
+          r="30"
+          fill="none"
+          class="path"></circle>
+      </svg>
+    </div>
+  </button>
+  <p x-data x-show="$store.bundleBuilder.cartError" x-text="$store.bundleBuilder.cartError"
+     role="alert" aria-live="assertive" class="!mt-2 !mb-0 text-sm text-center text-red-600"></p>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', function() {
+    Alpine.store('bundleBuilder', {
+      selectedVariant: {{ bundle_size_token | json }},
+      bundleLength: {{ product_count }},
+      showModal: false,
+      activeCategory: "All",
+      searchText: "",
+      addingToCart: false,
+      cartError: '',
+      selectedProducts: [
+        {% if product.tags contains 'fixed_bundle' %}
+          {% for fixed_var in fixed_bundle_products %}
+            {
+              id: {{ fixed_var.product.id }},
+              name: {% render 'polish-store-text', text: fixed_var.product.title, format: 'json' %},
+              image: "{{ fixed_var.product.featured_image | image_url }}",
+              inspiration_name: "{% if fixed_var.product.metafields.custom.inspired_by.value %}{{ fixed_var.product.metafields.custom.inspired_by.value.name }}{% endif %}",
+              variant: {
+                id: "{{ fixed_var.id }}",
+                title: "{{ fixed_var.title }}"
+              }
+            },
+          {% endfor %}
+        {% endif %}
+      ],
+      availableProducts: [
+        {% for bundle_product in bundle_collection.products %}
+          {% liquid
+            assign bundle_variant = nil
+            for variant in bundle_product.variants
+              assign variant_token = variant.title | downcase | strip | replace: ' ', ''
+              if variant_token == bundle_size_token
+                assign bundle_variant = variant
+                break
+              endif
+            endfor
+            if bundle_variant == blank or bundle_variant.available == false
+              continue
+            endif
+            if bundle_variant.inventory_management == 'shopify' and bundle_variant.inventory_quantity < 1
+              continue
+            endif
+
+            assign collection_handles = ''
+            for collection in bundle_product.collections
+              assign collection_handles = collection_handles | append: collection.handle
+              if forloop.last == false
+                assign collection_handles = collection_handles | append: ','
+              endif
+            endfor
+          %}
+          {
+            id: {{ bundle_product.id }},
+            name: {% render 'polish-store-text', text: bundle_product.title, format: 'json' %},
+            image: "{{ bundle_product.featured_image | image_url: width: 120, height: 120 }}",
+            nuta: "{% if bundle_product.metafields.custom.inspired_by.value %}{{ bundle_product.metafields.custom.inspired_by.value.name }}{% endif %}",
+            inspiration_image: "{% if bundle_product.metafields.custom.inspired_by.value %}{{ bundle_product.metafields.custom.inspired_by.value.image | image_url: width: 90, height: 90 }}{% endif %}",
+            inspiration_name: "{% if bundle_product.metafields.custom.inspired_by.value %}{{ bundle_product.metafields.custom.inspired_by.value.name }}{% endif %}",
+            tags: {{ bundle_product.tags | json }},
+            gender: "{% if bundle_product.tags contains 'fuer-maenner' and bundle_product.tags contains 'fuer-frauen' %}Unisex{% elsif bundle_product.tags contains 'fuer-maenner' %}Dla mężczyzn{% elsif bundle_product.tags contains 'fuer-frauen' %}Dla kobiet{% endif %}",
+            occasion: {{ bundle_product.metafields.custom.occasion.value | json }},
+            collections: "{{ collection_handles }}",
+            variants: {
+              {{ bundle_size_token | json }}: {
+                title: {{ bundle_variant.title | json }},
+                id: "{{ bundle_variant.id }}"
+              }
+            }
+          },
+        {% endfor %}
+      ],
+      addProduct(product) {
+        if (this.selectedProducts.length >= {{ product_count }}) return;
+        // Copy so the same fragrance can fill several slots
+        this.selectedProducts.push({ ...product, variant: product.variants[this.selectedVariant] });
+
+        if (this.selectedProducts.length === {{ product_count }}) {
+          this.showModal = false;
+          {% if block.settings.skip_atc_button %}
+            this.doATCandCheckout();
+          {% endif %}
+        }
+      },
+      decrementProduct(productId) {
+        const index = this.selectedProducts.map(item => item.id).lastIndexOf(productId);
+        if (index > -1) this.removeProduct(index);
+      },
+      countOf(productId) {
+        return this.selectedProducts.filter(item => item.id === productId).length;
+      },
+      removeProduct(index) {
+        this.selectedProducts.splice(index, 1);
+      },
+      isProductSelected(productId) {
+        return this.selectedProducts.some(product => product.id === productId);
+      },
+      doATCandCheckout() {
+        // Set loading state
+        this.addingToCart = true;
+        this.cartError = '';
+
+        // Products added without a variant (e.g. quiz prefill) fall back to the bundle size
+        this.selectedProducts.forEach(product => {
+          product.variant = product.variant || product.variants[this.selectedVariant];
+        });
+
+        // Create properties object with bundle items
+        const properties = {
+          "_bundle_items": this.selectedProducts.map(product => 
+            product.variant.id
+          ).join(',')
+        };
+        // Add each selected product as a separate property
+        this.selectedProducts.forEach((product, index) => {
+          properties[`Flakon ${index + 1}`] =
+            `${product.name} Inspiracja: ${product.inspiration_name} - ${product.variant.title}`;
+        });
+        // Prepare cart items
+        const items = {
+          items: [{
+            id: {{ selected_variant.id }},
+            quantity: 1,
+            properties: properties
+          }]
+        };
+
+        const cart = document.querySelector('cart-drawer');
+        {% unless block.settings.open_checkout %}
+          if (cart) {
+            items.sections = cart.getSectionsToRender().map(s => s.id);
+            items.sections_url = window.location.pathname;
+          }
+        {% endunless %}
+
+        // Make the API call
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(items),
+        })
+        .then(async response => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.status) {
+            const error = new Error(data.description || data.message || `Request failed with status ${response.status}`);
+            error.response = data;
+            throw error;
+          }
+          return data;
+        })
+        .then(responseData => {
+          {% unless product.tags contains 'fixed_bundle' %}
+            this.selectedProducts = [];
+          {% endunless %}
+          {% if block.settings.open_checkout %}
+            window.location.href = '/checkout';
+          {% else %}
+            if (cart) cart.renderContents(responseData);
+            else window.location.href = '/cart';
+          {% endif %}
+        })
+        .catch(error => {
+          console.error('Error adding to cart:', error, error.response || '');
+          const response = error.response || {};
+          this.cartError = response.description || response.message || {{ 'sections.cart.cart_error' | t | json }};
+        })
+        .finally(() => {
+          this.addingToCart = false;
+        });
+      }
+    });
+  });
+</script>
+
+{% comment %} Under the add to cart, the same as the perfume pages (quantity-breaker): payment methods, then the delivery / InPost / 60-day guarantee badges. {% endcomment %}
+<div>
+  <img
+    class="max-w-[400px] mx-auto mt-8 block"
+    src="{{ 'payment-badge.svg' | asset_url }}"
+    alt="{{ 'premium.pdp.payment_methods' | t }}"
+    width="100%"
+    height="auto"
+    loading="lazy">
+</div>
+
+{% render 'shipping-badges' %}

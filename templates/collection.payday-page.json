@@ -1,0 +1,227 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "banner": {
+      "type": "main-collection-banner",
+      "disabled": true,
+      "settings": {
+        "show_collection_description": true,
+        "show_collection_image": false,
+        "color_scheme": "scheme-2"
+      }
+    },
+    "1777318376529a1541": {
+      "type": "_blocks",
+      "blocks": {
+        "ai_gen_block_a001e92_KhHBV4": {
+          "type": "ai_gen_block_a001e92",
+          "settings": {
+            "desktop_image": "shopify://shop_images/TryScent_Payday_desktop.png",
+            "mobile_image": "shopify://shop_images/TryScent_Payday_mobile.png"
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "ai_gen_block_a001e92_KhHBV4"
+      ],
+      "disabled": true,
+      "settings": {}
+    },
+    "collection_header_LUWc6U": {
+      "type": "collection-header",
+      "blocks": {
+        "step_HXqQtw": {
+          "type": "step",
+          "settings": {
+            "step_title": "Oszczędź do 40% dzięki naszym zestawom",
+            "step_description": "Wybierz ulubione zapachy i dodaj je do koszyka."
+          }
+        },
+        "step_fQjVLT": {
+          "type": "step",
+          "settings": {
+            "step_title": "Odbierz nawet dwa flakony perfum GRATIS!",
+            "step_description": "Przy zakupach za 34 euro otrzymasz 1 flakon gratis. Przy zakupach za 65 euro otrzymasz 2 flakony gratis."
+          }
+        },
+        "step_Ld9Nec": {
+          "type": "step",
+          "settings": {
+            "step_title": "Zrób zakupy za co najmniej 35 euro.",
+            "step_description": "I skorzystaj z darmowej dostawy!"
+          }
+        }
+      },
+      "block_order": [
+        "step_HXqQtw",
+        "step_fQjVLT",
+        "step_Ld9Nec"
+      ],
+      "disabled": true,
+      "name": "Collection Header",
+      "settings": {
+        "background_color": "#242833",
+        "text_color": "#000000",
+        "bg_image": "shopify://shop_images/desktop_shade.png",
+        "bg_mobile_image": "shopify://shop_images/shaded_mobile.png",
+        "social_proof_text": "I skorzystaj z darmowej dostawy!",
+        "collection_title": "Dni perfum Magic!",
+        "collection_description": "Kup ulubione zapachy w jeszcze lepszych cenach!",
+        "btn_link": "",
+        "btn_text": "i odbierz nawet dwa flakony gratis!",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "mobile_padding_top": 40,
+        "mobile_padding_bottom": 40
+      }
+    },
+    "blocky_image_embedded_EbgihE": {
+      "type": "blocky-image-embedded",
+      "disabled": true,
+      "name": "Blocky Image Embed",
+      "settings": {
+        "image": "shopify://shop_images/PaydayDeal_Header_-_TryScent_-_DE.webp",
+        "section_height": "550px",
+        "mobile_height": "500px",
+        "image_fit": "cover",
+        "border_radius": 30,
+        "overlay_opacity": 0,
+        "text_align": "vertical-center horizontal-center",
+        "full_screen": false,
+        "page_width": 1200,
+        "padding_top": 50,
+        "padding_bottom": 50
+      }
+    },
+    "collection_header_afwWaN": {
+      "type": "collection-header",
+      "blocks": {
+        "step_FYgAph": {
+          "type": "step",
+          "settings": {
+            "step_title": "Otrzymaj 30% zniżki na cały koszyk",
+            "step_description": "Wybierz swoje ulubione zapachy i dodaj je do koszyka"
+          }
+        },
+        "step_Qpjtmg": {
+          "type": "step",
+          "settings": {
+            "step_title": "Dzięki zestawom oszczędzasz jeszcze więcej!",
+            "step_description": "Kup 3 – oszczędź 40%. Kup 6 – oszczędź 48%."
+          }
+        },
+        "step_AEkAAJ": {
+          "type": "step",
+          "settings": {
+            "step_title": "Wartość zamówienia co najmniej 65 euro",
+            "step_description": "Otrzymaj DARMOWĄ wysyłkę i DARMOWE prezenty!"
+          }
+        },
+        "guarantee_Dq8WtF": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/sandwatch_1.svg",
+            "text": "Utrzymuje się 12+ godzin"
+          }
+        },
+        "guarantee_kEpmJ7": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/icons_quality_3.png",
+            "text": "20% stężenia olejku zapachowego (Eau de Parfum)"
+          }
+        },
+        "guarantee_Hm7R4D": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/sheild-star_1.svg",
+            "text": "60-dniowa gwarancja zwrotu pieniędzy"
+          }
+        }
+      },
+      "block_order": [
+        "step_FYgAph",
+        "step_Qpjtmg",
+        "step_AEkAAJ",
+        "guarantee_Dq8WtF",
+        "guarantee_kEpmJ7",
+        "guarantee_Hm7R4D"
+      ],
+      "name": "Collection Header",
+      "settings": {
+        "background_color": "#ffffff",
+        "text_color": "#000000",
+        "bg_image": "shopify://shop_images/payday_banner.png",
+        "bg_mobile_image": "shopify://shop_images/payday_mobile_Nobottles.jpg",
+        "social_proof_text": "Polecane przez ponad 10 000 zadowolonych miłośników zapachów",
+        "collection_title": "Specjalna oferta w dniu wypłaty!",
+        "collection_description": "Kup swoje ulubione zapachy w jeszcze niższych cenach! A dzięki zestawom oszczędzasz jeszcze więcej!",
+        "btn_link": "",
+        "btn_text": "",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "mobile_padding_top": 40,
+        "mobile_padding_bottom": 40
+      }
+    },
+    "popular_products_jxMeVr": {
+      "type": "popular-products",
+      "name": "Popular Products",
+      "settings": {
+        "background_color": "#ffffff",
+        "heading": "Zestaw MagyX Days",
+        "subheading": "",
+        "collection": "tryscent-day",
+        "show_all_button_text": "",
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    },
+    "product-grid": {
+      "type": "main-collection-product-grid",
+      "settings": {
+        "products_per_page": 16,
+        "columns_desktop": 4,
+        "columns_mobile": "2",
+        "color_scheme": "scheme-2",
+        "image_ratio": "adapt",
+        "image_shape": "default",
+        "show_secondary_image": false,
+        "show_vendor": false,
+        "show_rating": true,
+        "quick_add": "none",
+        "enable_filtering": true,
+        "filter_type": "horizontal",
+        "enable_sorting": true,
+        "toolbar_style": "pills",
+        "enable_search": true,
+        "search_placeholder": "Szukaj: marka, zapach lub numer",
+        "search_results_text": "Wyniki dla „[query]”: [count]",
+        "search_result_text": "Wyniki dla „[query]”: 1",
+        "search_empty_text": "Brak wyników dla „[query]”. Wpisz markę albo nazwę oryginału.",
+        "search_loading_text": "Szukamy we wszystkich zapachach…",
+        "search_clear_label": "Wyczyść wyszukiwanie",
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    }
+  },
+  "order": [
+    "banner",
+    "1777318376529a1541",
+    "collection_header_LUWc6U",
+    "blocky_image_embedded_EbgihE",
+    "collection_header_afwWaN",
+    "popular_products_jxMeVr",
+    "product-grid"
+  ]
+}

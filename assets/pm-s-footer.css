@@ -1,0 +1,594 @@
+/* pm-s-footer.css (WP-B): footer, loaded by sections/footer.liquid after the Dawn footer stylesheets.
+   Colour comes from the section scheme (scheme-4 black on this store), so every tint is rgba(var(--color-foreground), x).
+   Layout: 375 = stacked (menu columns as accordion rows), 750 = 2 columns, 990 = 4 columns; newsletter = full-width row;
+   bottom row = socials · country selector + copyright · payment icons. */
+
+/* 1. Shell: 40/28 at 375, the section settings (60/36) from 750 */
+.premium .pm-footer {
+  padding-top: 40px;
+  padding-bottom: 28px;
+  border-top: 0;
+}
+
+.premium .pm-footer .footer__content-top {
+  padding-bottom: 0;
+  padding-left: var(--pm-gutter);
+  padding-right: var(--pm-gutter);
+}
+
+/* 2. Columns */
+.premium .pm-footer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.premium .pm-footer__block {
+  min-width: 0;
+}
+
+.premium .pm-footer__block:not(.pm-footer__block--menu) {
+  padding-top: 32px;
+}
+
+.premium .pm-footer__block:not(.pm-footer__block--menu):first-child {
+  padding-top: 0;
+}
+
+/* Headings: eyebrow token at 60% foreground */
+.premium .pm-footer .pm-footer__heading {
+  display: block;
+  margin: 0;
+  font-size: var(--pm-fs-eyebrow);
+  line-height: var(--pm-lh-eyebrow);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(var(--color-foreground), 0.6);
+}
+
+.premium .pm-footer .pm-footer__block:not(.pm-footer__block--menu) .pm-footer__heading {
+  margin-bottom: 16px;
+}
+
+/* Accordion rows at 375 (the pm-accordion base gives the plus/minus; tints are re-done for a dark scheme) */
+.premium .pm-footer .pm-accordion details {
+  border-top: 1px solid rgba(var(--color-foreground), 0.15);
+}
+
+.premium .pm-footer .pm-footer__block--menu:last-of-type .pm-accordion details,
+.premium .pm-footer .pm-accordion > details:last-child {
+  border-bottom: 1px solid rgba(var(--color-foreground), 0.15);
+}
+
+.premium .pm-footer .pm-footer__block--menu + .pm-footer__block--menu .pm-accordion details {
+  border-top: 0;
+}
+
+.premium .pm-footer .pm-footer__block--menu + .pm-footer__block--menu .pm-accordion details,
+.premium .pm-footer .pm-footer__block--menu .pm-accordion details {
+  border-bottom: 1px solid rgba(var(--color-foreground), 0.15);
+}
+
+.premium .pm-footer .pm-accordion summary {
+  padding: 16px 0;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-footer .pm-accordion summary .pm-footer__heading {
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-footer .pm-accordion details > :not(summary) {
+  padding: 0 0 16px;
+  color: inherit;
+}
+
+/* Links: 14/30 at 80% foreground, 100% on hover over .25s */
+.premium .pm-footer .pm-footer__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premium .pm-footer .pm-footer__links-item {
+  margin: 0;
+  padding: 0;
+}
+
+.premium .pm-footer .pm-footer__link {
+  display: inline-block;
+  padding: 0;
+  color: rgba(var(--color-foreground), 0.8);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 30px;
+  font-weight: 400;
+  letter-spacing: 0;
+  transition: color 0.25s var(--pm-ease);
+}
+
+.premium .pm-footer .pm-footer__link:hover,
+.premium .pm-footer .pm-footer__link.list-menu__item--active {
+  color: rgb(var(--color-foreground));
+  text-decoration: none;
+}
+
+/* Text block (Contact) */
+.premium .pm-footer .pm-footer__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 24px;
+  color: rgba(var(--color-foreground), 0.8);
+}
+
+.premium .pm-footer .pm-footer__text p {
+  margin: 0 0 8px;
+}
+
+.premium .pm-footer .pm-footer__text p:last-child {
+  margin-bottom: 0;
+}
+
+.premium .pm-footer .pm-footer__text a {
+  color: rgb(var(--color-foreground));
+}
+
+/* 3. Newsletter row: full width between the columns and the bottom row */
+.premium .pm-footer__newsletter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 32px 0;
+  border-top: 1px solid rgba(var(--color-foreground), 0.15);
+}
+
+.premium .pm-footer__newsletter-copy {
+  max-width: 440px;
+}
+
+.premium .pm-footer__newsletter-copy .pm-footer__heading {
+  margin-bottom: 8px;
+}
+
+.premium .pm-footer .pm-footer__newsletter-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: rgba(var(--color-foreground), 0.8);
+}
+
+.premium .pm-footer__newsletter-form {
+  width: 100%;
+}
+
+.premium .pm-footer .newsletter-form {
+  align-items: stretch;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper {
+  width: 100%;
+  max-width: none;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper .field {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper .field::before,
+.premium .pm-footer .newsletter-form__field-wrapper .field::after {
+  display: none;
+}
+
+/* Input 54px, transparent, 1px foreground border, radius 0 */
+.premium .pm-footer .newsletter-form__field-wrapper .field__input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  min-height: 54px;
+  margin: 0;
+  padding: 12px 20px;
+  border: 1px solid rgb(var(--color-foreground));
+  border-right: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgb(var(--color-foreground));
+  box-shadow: none;
+  font-size: 14px;
+  line-height: 22px;
+  letter-spacing: 0;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper .field__input::placeholder {
+  color: rgba(var(--color-foreground), 0.6);
+  opacity: 1;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper .field__input:focus,
+.premium .pm-footer .newsletter-form__field-wrapper .field__input:focus-visible {
+  margin: 0;
+  padding: 12px 20px;
+  border-radius: 0;
+  box-shadow: none;
+  outline: 2px solid rgb(var(--color-foreground));
+  outline-offset: -2px;
+}
+
+.premium .pm-footer .newsletter-form__field-wrapper .field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 54px square arrow button */
+.premium .pm-footer .newsletter-form__button {
+  position: static;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 54px;
+  height: 54px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgb(var(--color-foreground));
+  border-radius: 0;
+  background: transparent;
+  color: rgb(var(--color-foreground));
+  cursor: pointer;
+  transition: background-color var(--pm-dur) var(--pm-ease), color var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-footer .newsletter-form__button:hover {
+  background: rgb(var(--color-foreground));
+  color: rgb(var(--color-background));
+}
+
+.premium .pm-footer .newsletter-form__button:focus,
+.premium .pm-footer .newsletter-form__button:focus-visible {
+  background: transparent;
+  color: rgb(var(--color-foreground));
+  box-shadow: none;
+  outline: 2px solid rgb(var(--color-foreground));
+  outline-offset: -2px;
+}
+
+.premium .pm-footer .newsletter-form__button .svg-wrapper {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+.premium .pm-footer .newsletter-form__button .icon {
+  width: 16px;
+  height: auto;
+}
+
+.premium .pm-footer .newsletter-form__message {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-footer .newsletter-form__message--success {
+  margin-top: 12px;
+}
+
+.premium .pm-footer .pm-footer__follow {
+  justify-content: flex-start;
+}
+
+/* 4. Bottom row */
+.premium .pm-footer .pm-footer__bottom {
+  padding-top: 24px;
+  border-top: 1px solid rgba(var(--color-foreground), 0.15);
+}
+
+.premium .pm-footer .pm-footer__bottom-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: auto;
+}
+
+.premium .pm-footer .pm-footer__social:empty {
+  display: none;
+}
+
+.premium .pm-footer .pm-footer__social .list-social {
+  justify-content: center;
+  margin: 0;
+}
+
+.premium .pm-footer .pm-footer__social .list-social__link {
+  padding: 10px;
+  color: rgba(var(--color-foreground), 0.8);
+}
+
+.premium .pm-footer .pm-footer__social .list-social__link:hover {
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-footer .pm-footer__social .list-social__link:hover .icon {
+  transform: none;
+}
+
+.premium .pm-footer .pm-footer__legal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  padding: 0;
+}
+
+.premium .pm-footer .pm-footer__localization {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.premium .pm-footer .pm-footer__localization-label {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(var(--color-foreground), 0.6);
+}
+
+.premium .pm-footer .localization-form {
+  margin: 0;
+}
+
+/* Country button: 36px, 1px frame at 30% foreground, 13px text (overrides the snippet's 26px Tailwind span) */
+.premium .pm-footer .localization-selector.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(var(--color-foreground), 0.3);
+  border-radius: var(--pm-radius-sm);
+  background: transparent;
+  color: rgb(var(--color-foreground));
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.premium .pm-footer .localization-selector.link::before,
+.premium .pm-footer .localization-selector.link::after {
+  display: none;
+}
+
+.premium .pm-footer .localization-selector.link:hover {
+  border-color: rgb(var(--color-foreground));
+}
+
+.premium .pm-footer .localization-selector.link span {
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.premium .pm-footer .localization-selector.link .icon-caret {
+  position: static;
+  flex: none;
+  width: 10px;
+  height: 6px;
+  margin: 0;
+  transform: none;
+  color: rgba(var(--color-foreground), 0.6);
+}
+
+.premium .pm-footer .pm-footer__copyright {
+  margin: 0;
+  text-align: center;
+}
+
+.premium .pm-footer .copyright__content {
+  font-size: 11px;
+  line-height: 16px;
+  color: rgba(var(--color-foreground), 0.6);
+}
+
+.premium .pm-footer .copyright__content a {
+  color: rgba(var(--color-foreground), 0.6);
+  text-decoration: none;
+}
+
+.premium .pm-footer .copyright__content a:hover {
+  color: rgb(var(--color-foreground));
+  text-decoration: none;
+}
+
+.premium .pm-footer .policies li a {
+  padding: 0;
+}
+
+.premium .pm-footer .pm-footer__payment {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  padding: 0;
+}
+
+.premium .pm-footer .pm-footer__payment:empty {
+  display: none;
+}
+
+.premium .pm-footer .list-payment {
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* Bottom-row columns never exceed the screen; payment marks and policy links wrap on phones */
+.premium .pm-footer .pm-footer__bottom-grid > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.premium .pm-footer .policies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+.premium .pm-footer .list-payment__item {
+  padding: 2px 4px;
+}
+
+/* Payment marks in monochrome so the black band stays colourless */
+.premium .pm-footer .list-payment__item .icon {
+  display: block;
+  width: 38px;
+  height: 24px;
+  opacity: 0.85;
+  filter: grayscale(1);
+}
+
+/* 5. Tablet: 2 columns, bottom row still stacked */
+@media (min-width: 750px) {
+  .premium .pm-footer {
+    padding-top: var(--pm-footer-pt, 60px);
+    padding-bottom: var(--pm-footer-pb, 36px);
+  }
+
+  .premium .pm-footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 24px;
+  }
+
+  .premium .pm-footer__block:not(.pm-footer__block--menu) {
+    padding-top: 0;
+  }
+
+  /* Accordions become plain columns */
+  .premium .pm-footer .pm-accordion details,
+  .premium .pm-footer .pm-footer__block--menu .pm-accordion details,
+  .premium .pm-footer .pm-footer__block--menu + .pm-footer__block--menu .pm-accordion details,
+  .premium .pm-footer .pm-footer__block--menu:last-of-type .pm-accordion details,
+  .premium .pm-footer .pm-accordion > details:last-child {
+    border-top: 0;
+    border-bottom: 0;
+  }
+
+  .premium .pm-footer .pm-accordion summary {
+    padding: 0;
+    margin: 0 0 16px;
+    pointer-events: none;
+    cursor: default;
+  }
+
+  .premium .pm-footer .pm-accordion summary .pm-footer__heading {
+    color: rgba(var(--color-foreground), 0.6);
+  }
+
+  .premium .pm-footer .pm-accordion summary::after {
+    display: none;
+  }
+
+  .premium .pm-footer .pm-accordion details > :not(summary) {
+    padding: 0;
+    animation: none;
+  }
+
+  .premium .pm-footer__newsletter-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    margin-top: 48px;
+    padding: 40px 0;
+  }
+
+  .premium .pm-footer__newsletter-form {
+    width: auto;
+    flex: none;
+  }
+
+  .premium .pm-footer .newsletter-form__field-wrapper .field__input {
+    flex: 0 0 280px;
+    width: 280px;
+  }
+}
+
+/* 6. Desktop: 4 columns, 3-cell bottom row */
+@media (min-width: 990px) {
+  .premium .pm-footer__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .premium .pm-footer__newsletter-row {
+    margin-top: 60px;
+  }
+
+  .premium .pm-footer .pm-footer__bottom {
+    padding-top: 28px;
+  }
+
+  .premium .pm-footer .pm-footer__bottom-grid {
+    display: grid;
+    /* middle (country + legal links) capped at half the row so the policy links wrap and the payment marks keep their own column */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+  }
+
+  .premium .pm-footer .pm-footer__social {
+    justify-self: start;
+  }
+
+  .premium .pm-footer .pm-footer__social:empty {
+    display: block;
+  }
+
+  .premium .pm-footer .pm-footer__social .list-social {
+    justify-content: flex-start;
+  }
+
+  .premium .pm-footer .pm-footer__legal {
+    flex-direction: row;
+    gap: 24px;
+  }
+
+  .premium .pm-footer .pm-footer__copyright {
+    text-align: left;
+  }
+
+  .premium .pm-footer .pm-footer__payment {
+    justify-self: end;
+    justify-content: flex-end;
+  }
+
+  .premium .pm-footer .list-payment {
+    justify-content: flex-end;
+  }
+}

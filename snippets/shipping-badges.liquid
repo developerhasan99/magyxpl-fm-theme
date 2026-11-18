@@ -1,0 +1,47 @@
+{%- comment -%}
+  Badges under the add-to-cart. Rendered by reactive-atc, quantity-breaker and custom-offer-bundle (bundle pages).
+  One row of equal tiles: 48h delivery in Poland, InPost, 60-day guarantee.
+  InPost in its own colours; the guarantee seal is guarantee-badge.png recoloured to the MAGYX accent, Pine #184031 (guarantee-badge-accent.png).
+  The product templates place the UGC video row (ugc_videos block) right under this row.
+  Also sets the scroll offset for #atc_scroll_target (the ATC anchor linked from stacks-up) so the sticky header never covers it.
+{%- endcomment -%}
+<style>
+  .shipping-badges { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .shipping-badges__item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 6px; text-align: center; }
+  .shipping-badges__item + .shipping-badges__item { border-left: 1px solid var(--mgx-hairline); }
+  .shipping-badges__icon { display: block; width: 28px; height: 28px; }
+  .shipping-badges__icon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+  .shipping-badges__logo { display: block; height: 28px; width: auto; }
+  .shipping-badges__text { font-size: 12px; line-height: 1.3; font-weight: 600; }
+  #atc_scroll_target { scroll-margin-top: calc(var(--header-height, 0px) + 12px); }
+  @media (min-width: 750px) {
+    .shipping-badges__item { padding: 4px 10px; }
+    .shipping-badges__text { font-size: 13px; }
+  }
+</style>
+<div class="shipping-badges mgx-text">
+  <div class="shipping-badges__item">
+    <span class="shipping-badges__icon" aria-hidden="true">{{ 'icon-truck.svg' | inline_asset_content }}</span>
+    <span class="shipping-badges__text">{{ delivery_text | default: 'Dostawa w 48 godzin na terenie Polski' }}</span>
+  </div>
+  <div class="shipping-badges__item">
+    <img
+      class="shipping-badges__logo"
+      src="{{ 'inpost-logo.svg' | asset_url }}"
+      alt=""
+      width="47"
+      height="28"
+      loading="lazy">
+    <span class="shipping-badges__text">Bezpieczna wysyłka z InPost</span>
+  </div>
+  <div class="shipping-badges__item">
+    <img
+      class="shipping-badges__logo"
+      src="{{ 'guarantee-badge-accent.png' | asset_url }}"
+      alt=""
+      width="28"
+      height="28"
+      loading="lazy">
+    <span class="shipping-badges__text">{{ guarantee_text | default: 'Wypróbuj przez 60 dni, bez ryzyka.' }}</span>
+  </div>
+</div>

@@ -1,0 +1,372 @@
+{{ 'pm-s-stacks-up.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Premium redesign (WP-C2): monochrome comparison table.
+  Two row models share one schema:
+  - FM model: block `stack_heading` (+ `stack_subheading`) → feature row with check (ours) / cross (theirs).
+  - tryscent model: block `our_stack` + `other_brands` → two text columns (ours / others), used by the
+    Zestaw page and the older product templates. A section renders in text mode when its first stack
+    block has no `stack_heading` but has `our_stack`.
+  Header labels: `ours_label` / `theirs_label`, falling back to `ours_title` / `others_title`.
+  Button link: `btn_url`, falling back to `button_url` (anchor, e.g. #atc_scroll_target or #mgx-offer).
+{%- endcomment -%}
+{%- liquid
+  assign compare_text_mode = false
+  assign first_stack = section.blocks | where: 'type', 'stack' | first
+  if first_stack != blank and first_stack.settings.stack_heading == blank and first_stack.settings.our_stack != blank
+    assign compare_text_mode = true
+  endif
+  assign ours_label = section.settings.ours_label | default: section.settings.ours_title
+  assign theirs_label = section.settings.theirs_label | default: section.settings.others_title
+  assign compare_btn_url = section.settings.btn_url | default: section.settings.button_url | default: '#atc_scroll_target'
+-%}
+{%- style -%}
+  .premium .pm-compare--{{ section.id }} {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .premium .pm-compare--{{ section.id }} {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+<div
+  id="{{ section.id }}"
+  class="pm-compare pm-compare--{{ section.id }} color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width">
+    {%- if section.settings.kicker != blank -%}
+      <p class="pm-eyebrow pm-muted pm-compare__kicker">{{ section.settings.kicker }}</p>
+    {%- endif -%}
+    <h2 class="pm-h2 pm-compare__heading">{{ section.settings.title }}</h2>
+    {%- if section.settings.subtitle != blank -%}
+      <p class="pm-body pm-muted pm-compare__subtitle">{{ section.settings.subtitle }}</p>
+    {%- endif -%}
+    {%- if compare_text_mode -%}
+      <div class="pm-compare__table pm-compare__table--text" role="table">
+        <div class="pm-compare__row pm-compare__row--head" role="row">
+          <div class="pm-compare__cell pm-compare__cell--ours" role="columnheader">
+            <span class="pm-compare__ours-label">{{ ours_label }}</span>
+            {%- if section.settings.ours_note != blank -%}
+              <span class="pm-compare__ours-note">{{ section.settings.ours_note }}</span>
+            {%- endif -%}
+          </div>
+          <div class="pm-compare__cell pm-compare__cell--theirs" role="columnheader">{{ theirs_label }}</div>
+        </div>
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'stack' -%}
+            <div class="pm-compare__row" role="row" {{ block.shopify_attributes }}>
+              <div class="pm-compare__cell pm-compare__cell--text pm-compare__cell--yes" role="cell">
+                {% render 'pm-icon', icon: 'check', size: 18, stroke: 1.75, class: 'pm-compare__text-icon' %}
+                <span class="visually-hidden">{{ section.settings.yes_label }}</span>
+                <span class="pm-compare__text">{{ block.settings.our_stack }}</span>
+              </div>
+              <div class="pm-compare__cell pm-compare__cell--text pm-compare__cell--no" role="cell">
+                {% render 'pm-icon', icon: 'close', size: 16, stroke: 1.5, class: 'pm-compare__text-icon' %}
+                <span class="visually-hidden">{{ section.settings.no_label }}</span>
+                <span class="pm-compare__text">{{ block.settings.other_brands }}</span>
+              </div>
+            </div>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- else -%}
+      <div class="pm-compare__table{% if section.settings.dupes_label != blank %} pm-compare__table--three{% endif %}" role="table">
+        <div class="pm-compare__row pm-compare__row--head" role="row">
+          <div class="pm-compare__cell pm-compare__cell--label" role="columnheader"><span class="visually-hidden">{{ section.settings.kicker }}</span></div>
+          <div class="pm-compare__cell pm-compare__cell--ours" role="columnheader">
+            <span class="pm-compare__ours-label">{{ ours_label }}</span>
+            {%- if section.settings.ours_note != blank -%}
+              <span class="pm-compare__ours-note">{{ section.settings.ours_note }}</span>
+            {%- endif -%}
+          </div>
+          {%- if section.settings.dupes_label != blank -%}
+            <div class="pm-compare__cell pm-compare__cell--theirs" role="columnheader">{{ section.settings.dupes_label }}</div>
+          {%- endif -%}
+          <div class="pm-compare__cell pm-compare__cell--theirs" role="columnheader">{{ theirs_label }}</div>
+        </div>
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'stack' -%}
+            <div class="pm-compare__row" role="row" {{ block.shopify_attributes }}>
+              <div class="pm-compare__cell pm-compare__cell--label" role="rowheader">
+                <span class="pm-compare__feature">{{ block.settings.stack_heading | default: block.settings.our_stack }}</span>
+                {%- if block.settings.stack_subheading != blank -%}
+                  <span class="pm-compare__sub">{{ block.settings.stack_subheading }}</span>
+                {%- endif -%}
+              </div>
+              <div class="pm-compare__cell pm-compare__cell--mark pm-compare__cell--yes" role="cell">
+                {% render 'pm-icon', icon: 'check', size: 20, stroke: 1.75 %}
+                <span class="visually-hidden">{{ section.settings.yes_label }}</span>
+              </div>
+              {%- if section.settings.dupes_label != blank -%}
+                {%- case block.settings.dupes_mark -%}
+                  {%- when 'yes' -%}
+                    <div class="pm-compare__cell pm-compare__cell--mark pm-compare__cell--dupes-yes" role="cell">
+                      {% render 'pm-icon', icon: 'check', size: 20, stroke: 1.75 %}
+                      <span class="visually-hidden">{{ section.settings.yes_label }}</span>
+                    </div>
+                  {%- when 'partial' -%}
+                    <div class="pm-compare__cell pm-compare__cell--mark pm-compare__cell--no" role="cell">
+                      {% render 'pm-icon', icon: 'minus', size: 18, stroke: 1.5 %}
+                      <span class="visually-hidden">{{ section.settings.partial_label }}</span>
+                    </div>
+                  {%- else -%}
+                    <div class="pm-compare__cell pm-compare__cell--mark pm-compare__cell--no" role="cell">
+                      {% render 'pm-icon', icon: 'close', size: 18, stroke: 1.5 %}
+                      <span class="visually-hidden">{{ section.settings.no_label }}</span>
+                    </div>
+                {%- endcase -%}
+              {%- endif -%}
+              <div class="pm-compare__cell pm-compare__cell--mark pm-compare__cell--no" role="cell">
+                {% render 'pm-icon', icon: 'close', size: 18, stroke: 1.5 %}
+                <span class="visually-hidden">{{ section.settings.no_label }}</span>
+              </div>
+            </div>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+    <div class="pm-compare__footer">
+      {%- if section.settings.btn_text != blank -%}
+        <a href="{{ compare_btn_url }}" class="pm-btn pm-btn--primary pm-compare__cta">{{ section.settings.btn_text }}</a>
+      {%- endif -%}
+      {%- if section.settings.proof_1 != blank or section.settings.proof_2 != blank -%}
+        <ul class="pm-compare__proof" role="list">
+          {%- if section.settings.proof_1 != blank -%}
+            <li class="pm-compare__proof-item">{% render 'pm-icon', icon: 'clock', size: 16, stroke: 1.5 %}<span>{{ section.settings.proof_1 }}</span></li>
+          {%- endif -%}
+          {%- if section.settings.proof_2 != blank -%}
+            <li class="pm-compare__proof-item">{% render 'pm-icon', icon: 'heart', size: 16, stroke: 1.5 %}<span>{{ section.settings.proof_2 }}</span></li>
+          {%- endif -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+  {
+    "name": "Stacks Up",
+    "tag": "section",
+    "settings": [
+      {
+        "type": "color_scheme",
+        "id": "color_scheme",
+        "label": "Color scheme",
+        "default": "scheme-1"
+      },
+      {
+        "type": "color",
+        "id": "background_color",
+        "label": "Background Color (legacy, no longer used)",
+        "default": "#ffffff"
+      },
+      {
+        "type": "text",
+        "id": "kicker",
+        "label": "Kicker"
+      },
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Title",
+        "default": "Dlaczego MagyX?"
+      },
+      {
+        "type": "text",
+        "id": "subtitle",
+        "label": "Subtitle",
+        "default": "Rozsądna alternatywa dla drogich marek luksusowych."
+      },
+      {
+        "type": "text",
+        "id": "ours_label",
+        "label": "Our column label",
+        "info": "Empty = uses \"Nagłówek kolumny MagyX\"."
+      },
+      {
+        "type": "text",
+        "id": "ours_note",
+        "label": "Our column note",
+        "info": "E.g. 20% stężenia"
+      },
+      {
+        "type": "text",
+        "id": "theirs_label",
+        "label": "Their column label",
+        "info": "Empty = uses \"Nagłówek kolumny porównania\"."
+      },
+      {
+        "type": "text",
+        "id": "dupes_label",
+        "label": "Middle column label (other dupes)",
+        "info": "E.g. Inne odpowiedniki. Empty = two columns. Set each row's mark in its block."
+      },
+      {
+        "type": "text",
+        "id": "ours_title",
+        "label": "Nagłówek kolumny MagyX",
+        "default": "MagyX Perfume"
+      },
+      {
+        "type": "text",
+        "id": "others_title",
+        "label": "Nagłówek kolumny porównania",
+        "default": "Drogie marki luksusowe"
+      },
+      {
+        "type": "text",
+        "id": "btn_text",
+        "label": "Button Text",
+        "default": "Odkryj MagyX"
+      },
+      {
+        "type": "url",
+        "id": "btn_url",
+        "label": "Button URL",
+        "info": "Empty = uses \"Link przycisku\" (anchor)."
+      },
+      {
+        "type": "text",
+        "id": "button_url",
+        "label": "Link przycisku",
+        "info": "Np. #atc_scroll_target albo #mgx-offer",
+        "default": "#atc_scroll_target"
+      },
+      {
+        "type": "text",
+        "id": "proof_1",
+        "label": "Proof line 1 (clock icon)"
+      },
+      {
+        "type": "text",
+        "id": "proof_2",
+        "label": "Proof line 2 (heart icon)"
+      },
+      {
+        "type": "text",
+        "id": "yes_label",
+        "label": "Screen-reader text for a check mark",
+        "default": "Tak"
+      },
+      {
+        "type": "text",
+        "id": "no_label",
+        "label": "Screen-reader text for a cross",
+        "default": "Nie"
+      },
+      {
+        "type": "text",
+        "id": "partial_label",
+        "label": "Screen-reader text for a dash",
+        "default": "Częściowo"
+      },
+      {
+        "type": "header",
+        "content": "t:sections.all.padding.section_padding_heading"
+      },
+      {
+        "type": "range",
+        "id": "padding_top",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_top",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "padding_bottom",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_bottom",
+        "default": 36
+      }
+    ],
+    "blocks": [
+      {
+        "type": "stack",
+        "name": "Stack",
+        "settings": [
+          {
+            "type": "paragraph",
+            "content": "Feature row: fill Stack Heading (check / cross). Text row: leave it empty and fill Our Stack + Other Brands."
+          },
+          {
+            "type": "text",
+            "id": "stack_heading",
+            "label": "Stack Heading"
+          },
+          {
+            "type": "text",
+            "id": "stack_subheading",
+            "label": "Stack Subheading"
+          },
+          {
+            "type": "text",
+            "id": "our_stack",
+            "label": "Our Stack"
+          },
+          {
+            "type": "text",
+            "id": "other_brands",
+            "label": "Other Brands"
+          },
+          {
+            "type": "select",
+            "id": "dupes_mark",
+            "label": "Other dupes column",
+            "info": "Shown when the section has a middle column label.",
+            "options": [
+              { "value": "yes", "label": "Check" },
+              { "value": "partial", "label": "Dash (sometimes)" },
+              { "value": "no", "label": "Cross" }
+            ],
+            "default": "no"
+          }
+        ]
+      }
+    ],
+    "presets": [
+      {
+        "name": "Stacks Up",
+        "blocks": [
+          {
+            "type": "stack",
+            "settings": {
+              "stack_heading": "20% olejku perfumeryjnego"
+            }
+          },
+          {
+            "type": "stack",
+            "settings": {
+              "stack_heading": "Bez ftalanów i parabenów"
+            }
+          },
+          {
+            "type": "stack",
+            "settings": {
+              "stack_heading": "Bez testów na zwierzętach"
+            }
+          },
+          {
+            "type": "stack",
+            "settings": {
+              "stack_heading": "Płacisz za jakość, nie za marketing"
+            }
+          },
+          {
+            "type": "stack",
+            "settings": {
+              "stack_heading": "60-dniowa gwarancja zwrotu pieniędzy"
+            }
+          }
+        ]
+      }
+    ]
+  }
+{% endschema %}

@@ -1,0 +1,69 @@
+{%- comment -%}
+  pm-review-stats-view (theme-owned reviews): markup for the review numbers. Rendered only by the generated
+  snippets/pm-review-stats.liquid, which passes the numbers; call that snippet, never this one.
+  Usage: {% render 'pm-review-stats', product: product, mode: 'pdp' %}
+
+  Params: avg, count (this product, or store totals for summary / pdp_store), mode, product,
+          store_avg, store_count, store_hist ('5:n,4:n,3:n,2:n,1:n').
+  Modes:
+  - card: small ink stars + "(count)" for product cards; nothing when the product has no reviews.
+  - pdp: stars + "4,9/5 | N opinii" linking to #reviews. Product numbers when the product has reviews,
+         else the store totals.
+  - pdp_store / summary: the same line with the store totals.
+  - jsonld: Product name + AggregateRating JSON-LD; only when the product itself has reviews.
+  - store_avg / store_count / store_hist: the raw store value as plain text (for capture).
+{%- endcomment -%}
+{%- liquid
+  assign pm_v_count = count | default: 0 | plus: 0
+  assign pm_v_avg = avg | default: 0 | plus: 0
+  if mode == 'pdp' and pm_v_count == 0
+    assign pm_v_avg = store_avg | default: 0 | plus: 0
+    assign pm_v_count = store_count | default: 0 | plus: 0
+  endif
+  assign pm_v_avg_text = pm_v_avg | round: 1 | append: '' | replace: '.', ','
+-%}
+{%- case mode -%}
+  {%- when 'store_avg' -%}
+    {{- store_avg -}}
+  {%- when 'store_count' -%}
+    {{- store_count -}}
+  {%- when 'store_hist' -%}
+    {{- store_hist -}}
+  {%- when 'card' -%}
+    {%- if pm_v_count > 0 -%}
+      <div class="pm-card__rating pm-rstats flex items-center">
+        {%- render 'pm-stars', rating: pm_v_avg_text, size: 12 -%}
+        <span class="pm-rstats__count">
+          <span aria-hidden="true">({{ pm_v_count }})</span>
+          <span class="visually-hidden">{{ 'premium.reviews.count' | t: count: pm_v_count }}</span>
+        </span>
+      </div>
+    {%- endif -%}
+  {%- when 'jsonld' -%}
+    {%- if pm_v_count > 0 and product != blank -%}
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": {{ product.title | json }},
+          "url": {{ request.origin | append: product.url | json }},
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": {{ pm_v_avg | json }},
+            "reviewCount": {{ pm_v_count | json }},
+            "bestRating": 5,
+            "worstRating": 1
+          }
+        }
+      </script>
+    {%- endif -%}
+  {%- else -%}
+    {%- if pm_v_count > 0 -%}
+      <span class="pm-rating__score pm-rstats flex flex-wrap items-center gap-2 text-sm">
+        {%- render 'pm-stars', rating: pm_v_avg_text, size: 14 -%}
+        <span class="pm-rating__label">{{ pm_v_avg_text }}/5</span>
+        <span class="pm-rating__sep" aria-hidden="true">|</span>
+        <a class="pm-rating__link" href="#reviews">{{ 'premium.reviews.count' | t: count: pm_v_count }}</a>
+      </span>
+    {%- endif -%}
+{%- endcase -%}

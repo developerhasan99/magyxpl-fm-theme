@@ -1,0 +1,22 @@
+{% if product.metafields.custom.inspired_by != blank %}
+  <div class="flex items-center gap-2 mb-3">
+    <img
+      style="filter: blur(2px);"
+      class="object-contain object-center bg-white"
+      src="{{ product.metafields.custom.inspired_by.value.image |  image_url }}"
+      alt="{{ product.metafields.custom.inspired_by.value.image.alt | escape }}"
+      width="45"
+      height="45">
+    <div>
+      <p class="text-sm my-0">Inspiracja:</p>
+      <h4 class="font-semibold my-0 line-clamp-1 inspiration_heading">{{ product.metafields.custom.inspired_by.value.name }}</h4>
+    </div>
+  </div>
+{% endif %}
+
+<div>
+  {% if product.metafields.custom.original_retail_price != blank %}
+    <div>({{ 'sections.pre_atc_blocks.original_retail_price_label' | t }}: {{ product.metafields.custom.original_retail_price.value | money_without_trailing_zeros }})</div>
+  {% endif %}
+</div>
+

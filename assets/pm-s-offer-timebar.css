@@ -1,0 +1,145 @@
+/* pm-s-offer-timebar.css (WP-B): minimal announcement bar, loaded by sections/offer-timebar.liquid when style = minimal.
+   Text 1.5x the base announce size. Colour from the section scheme (scheme-4 = black).
+   from 1100, one line: {eyebrow} · {prepend} · {deal} · KOŃCZY SIĘ ZA hh:mm:ss [BUTTON]
+   below 1100: {deal} on its own line(s), then [clock] hh:mm:ss [BUTTON] on the next */
+
+.premium .pm-timebar {
+  display: block;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-timebar__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  box-sizing: border-box;
+  padding: 8px var(--pm-gutter);
+  color: inherit;
+  text-decoration: none;
+  font-size: calc(var(--pm-fs-announce) * 1.5);
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.premium .pm-timebar__link:hover,
+.premium .pm-timebar__link:focus-visible {
+  color: inherit;
+  text-decoration: none;
+}
+
+.premium .pm-timebar__link:focus-visible {
+  outline: 2px solid rgb(var(--color-foreground));
+  outline-offset: -2px;
+}
+
+.premium .pm-timebar__text {
+  display: inline-block;
+}
+
+/* The deal gets its own line below 1100 and may wrap on phones */
+.premium .pm-timebar__deal {
+  flex-basis: 100%;
+  font-weight: 600;
+  white-space: normal;
+}
+
+/* [words in brackets] in Append Text */
+.premium .pm-timebar__em {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.premium .pm-timebar__ends {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.premium .pm-timebar__icon {
+  display: block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.premium .pm-timebar__clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.premium .pm-timebar__sep {
+  flex: none;
+  opacity: 0.6;
+}
+
+/* Button: white fill on the black bar so it reads as something to tap */
+.premium .pm-timebar__btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 5px 14px;
+  border-radius: var(--pm-radius-sm);
+  background: rgb(var(--color-foreground));
+  color: rgb(var(--color-background));
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  transition: opacity var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-timebar__link:hover .pm-timebar__btn {
+  opacity: 0.88;
+}
+
+.premium .pm-timebar__arrow {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  transition: transform var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-timebar__link:hover .pm-timebar__arrow {
+  transform: translateX(2px);
+}
+
+/* Below 1100: eyebrow, lead text, the "ends in" label and the dots step aside */
+.premium .pm-timebar__desk,
+.premium .pm-timebar__sep {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .premium .pm-timebar__link {
+    flex-wrap: nowrap;
+    padding-block: 6px;
+  }
+
+  .premium .pm-timebar__deal {
+    flex-basis: auto;
+    white-space: nowrap;
+  }
+
+  .premium .pm-timebar__desk,
+  .premium .pm-timebar__sep {
+    display: inline-block;
+  }
+
+  .premium .pm-timebar__icon {
+    display: none;
+  }
+}

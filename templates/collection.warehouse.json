@@ -1,0 +1,141 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "collection_header_zMrgV9": {
+      "type": "collection-header",
+      "blocks": {
+        "step_piURBQ": {
+          "type": "step",
+          "settings": {
+            "step_title": "Otrzymaj 30% rabatu na cały koszyk",
+            "step_description": "Wybierz ulubione zapachy i dodaj je do koszyka"
+          }
+        },
+        "step_7eTiRE": {
+          "type": "step",
+          "settings": {
+            "step_title": "Z zestawami oszczędzasz jeszcze więcej!",
+            "step_description": "Kup 3 – oszczędź 40%. Kup 6 – oszczędź 48%."
+          }
+        },
+        "step_KKtVmi": {
+          "type": "step",
+          "settings": {
+            "step_title": "Wartość zamówienia co najmniej 65 euro",
+            "step_description": "Odbierz DARMOWĄ dostawę i prezenty GRATIS!"
+          }
+        },
+        "guarantee_mtd9Gw": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/sandwatch_1.svg",
+            "text": "Trwałość ponad 12 godzin"
+          }
+        },
+        "guarantee_x7hFWP": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/icons_quality_3.png",
+            "text": "20% olejków zapachowych (Eau de Parfum)"
+          }
+        },
+        "guarantee_xY66Fn": {
+          "type": "guarantee",
+          "settings": {
+            "icon": "shopify://shop_images/sheild-star_1.svg",
+            "text": "60-dniowa gwarancja zwrotu pieniędzy"
+          }
+        }
+      },
+      "block_order": [
+        "step_piURBQ",
+        "step_7eTiRE",
+        "step_KKtVmi",
+        "guarantee_mtd9Gw",
+        "guarantee_x7hFWP",
+        "guarantee_xY66Fn"
+      ],
+      "name": "Collection Header",
+      "settings": {
+        "background_color": "#ffffff",
+        "text_color": "#000000",
+        "bg_image": "shopify://shop_images/payday_banner.png",
+        "bg_mobile_image": "shopify://shop_images/payday_mobile_Nobottles.jpg",
+        "social_proof_text": "Polecane przez ponad 10 000 zadowolonych miłośników zapachów",
+        "collection_title": "Specjalna oferta na dzień wypłaty!",
+        "collection_description": "Kup ulubione zapachy w jeszcze niższych cenach! Z zestawami oszczędzasz jeszcze więcej!",
+        "btn_link": "",
+        "btn_text": "",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "mobile_padding_top": 40,
+        "mobile_padding_bottom": 40
+      }
+    },
+    "popular_products_3Lx6bB": {
+      "type": "popular-products",
+      "disabled": true,
+      "name": "Popular Products",
+      "settings": {
+        "background_color": "#fcfbf9",
+        "heading": "🔥Najgorętsze zapachy lata 2026🔥",
+        "subheading": "Stworzone z myślą o jakości.",
+        "collection": "neue-angesagte-dufte",
+        "show_all_button_text": "ZOBACZ",
+        "padding_top": 12,
+        "padding_bottom": 12
+      }
+    },
+    "banner": {
+      "type": "main-collection-banner",
+      "disabled": true,
+      "settings": {
+        "show_collection_description": true,
+        "show_collection_image": false,
+        "color_scheme": "scheme-2"
+      }
+    },
+    "product-grid": {
+      "type": "main-collection-product-grid",
+      "settings": {
+        "products_per_page": 16,
+        "columns_desktop": 4,
+        "columns_mobile": "2",
+        "color_scheme": "scheme-2",
+        "image_ratio": "adapt",
+        "image_shape": "default",
+        "show_secondary_image": false,
+        "show_vendor": false,
+        "show_rating": true,
+        "quick_add": "none",
+        "enable_filtering": true,
+        "filter_type": "horizontal",
+        "enable_sorting": true,
+        "toolbar_style": "pills",
+        "enable_search": true,
+        "search_placeholder": "Szukaj: marka, zapach lub numer",
+        "search_results_text": "Wyniki dla „[query]”: [count]",
+        "search_result_text": "Wyniki dla „[query]”: 1",
+        "search_empty_text": "Brak wyników dla „[query]”. Wpisz markę albo nazwę oryginału.",
+        "search_loading_text": "Szukamy we wszystkich zapachach…",
+        "search_clear_label": "Wyczyść wyszukiwanie",
+        "padding_top": 36,
+        "padding_bottom": 40
+      }
+    }
+  },
+  "order": [
+    "collection_header_zMrgV9",
+    "popular_products_3Lx6bB",
+    "banner",
+    "product-grid"
+  ]
+}

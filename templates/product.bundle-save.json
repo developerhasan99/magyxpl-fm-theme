@@ -1,0 +1,821 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "pm_bundle_save": {
+      "type": "pm-bundle-save",
+      "settings": {
+        "bundle_handle": "zestaw-perfum",
+        "bottle_size": "50ml",
+        "pricing_mode": "bundle_product",
+        "bottle_property": "Flakon",
+        "headline": "Kup więcej, <em>zapłać mniej</em>",
+        "subheading": "Złóż swój zestaw ulubionych zapachów i zaoszczędź nawet 40%",
+        "description": "<p>Noś swoje ulubione perfumy inspirowane luksusowymi markami 90% taniej.</p><p>Jakość gwarantowana olejkami perfumowymi prosto z Francji.<br>Dzięki naszej lokalnej produkcji w EU gwarantujemy brak ftalanów oraz parabenów.</p>",
+        "show_timer": true,
+        "timer_label": "Odliczanie oferty",
+        "timer_eyebrow": "Black Month · do -[max]% · tylko teraz",
+        "timer_title": "24-godzinna wyprzedaż",
+        "timer_hours": 24,
+        "timer_hrs_label": "godz.",
+        "timer_mins_label": "min",
+        "timer_secs_label": "sek.",
+        "show_rating": true,
+        "saving_badge": "-[pct]%"
+      },
+      "blocks": {
+        "b1": {
+          "type": "benefit",
+          "settings": {
+            "icon": "drop",
+            "text": "20% olejków zapachowych z Grasse (Eau de Parfum)"
+          }
+        },
+        "b2": {
+          "type": "benefit",
+          "settings": {
+            "icon": "clock",
+            "text": "Trwałość nawet do 12 godzin"
+          }
+        },
+        "b3": {
+          "type": "benefit",
+          "settings": {
+            "icon": "leaf",
+            "text": "Bez ftalanów i parabenów"
+          }
+        },
+        "b4": {
+          "type": "tier",
+          "settings": {
+            "bottles": 2,
+            "max_bottles": 2,
+            "label": "2 flakony",
+            "tag": "Na dzień i wieczór",
+            "preselected": false
+          }
+        },
+        "b5": {
+          "type": "tier",
+          "settings": {
+            "bottles": 4,
+            "max_bottles": 4,
+            "label": "4 flakony",
+            "tag": "Na każdą okazję",
+            "preselected": false
+          }
+        },
+        "b6": {
+          "type": "tier",
+          "settings": {
+            "bottles": 6,
+            "max_bottles": 6,
+            "label": "6 flakonów",
+            "tag": "",
+            "highlight": "Najczęściej wybierany",
+            "preselected": true
+          }
+        },
+        "b7": {
+          "type": "tier",
+          "settings": {
+            "bottles": 8,
+            "max_bottles": 20,
+            "label": "8+ flakonów",
+            "tag": "Dla kolekcjonerów",
+            "preselected": false
+          }
+        },
+        "b8": {
+          "type": "line",
+          "settings": {
+            "group": "women",
+            "label": "Dla niej",
+            "subtext": "Zapachy: [count]",
+            "preselected": false
+          }
+        },
+        "b9": {
+          "type": "line",
+          "settings": {
+            "group": "men",
+            "label": "Dla niego",
+            "subtext": "Zapachy: [count]",
+            "preselected": false
+          }
+        },
+        "b10": {
+          "type": "line",
+          "settings": {
+            "group": "unisex",
+            "label": "Unisex",
+            "subtext": "Zapachy: [count]",
+            "preselected": false
+          }
+        },
+        "b11": {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Jak długo utrzymuje się zapach?",
+            "answer": "<p>Nawet do 12 godzin. Trwałość zależy od Twojej skóry. Nakładaj perfumy na skórę, a nie na ubrania.</p>"
+          }
+        },
+        "b12": {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Czy mogę połączyć różne zapachy?",
+            "answer": "<p>Tak. Wybierasz dowolne zapachy z listy, w dowolnym połączeniu. Ten sam zapach możesz dodać kilka razy.</p>"
+          }
+        },
+        "b13": {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Co, jeśli zapach mi nie pasuje?",
+            "answer": "<p>Masz 60 dni gwarancji. Jeśli zapach nie jest dla Ciebie, zwróć zamówienie.</p>"
+          }
+        },
+        "r1": {
+          "type": "mini_review",
+          "settings": {
+            "quote": "Świetny produkt! Bardzo przystępna cenowo alternatywa dla markowych perfum. Zapach długo się utrzymuje i jest wart swojej ceny.",
+            "name": "Ewa M.",
+            "verified": true
+          }
+        },
+        "r2": {
+          "type": "mini_review",
+          "settings": {
+            "quote": "To taki zapach, dzięki któremu czujesz się zadbany. Nie przytłacza, jest w sam raz.",
+            "name": "Michał R.",
+            "verified": true
+          }
+        },
+        "r3": {
+          "type": "mini_review",
+          "settings": {
+            "quote": "Przepięknie pachnące perfumy, bardzo trwałe zapachy i doskonała jakość.",
+            "name": "Kamila G.",
+            "verified": true
+          }
+        }
+      },
+      "block_order": [
+        "b1",
+        "b2",
+        "b3",
+        "b4",
+        "b5",
+        "b6",
+        "b7",
+        "b8",
+        "b9",
+        "b10",
+        "r1",
+        "r2",
+        "r3",
+        "b11",
+        "b12",
+        "b13"
+      ]
+    },
+    "pm_bs_review_cards": {
+      "type": "pm-bs-review-cards",
+      "disabled": true,
+      "settings": {
+        "color_scheme": "scheme-1",
+        "rating_text": "Ocena 4,8",
+        "heading": "Zapach, który zwraca uwagę",
+        "subheading": "Od dyskretnych spojrzeń po komplementy",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "card_1": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_molly.webp",
+            "headline": "Dobry zapach w rozsądnej cenie",
+            "quote": "Zapach jest bardzo podobny do oryginału i dobrze się utrzymuje. To świetny wybór, jeśli szukasz dobrego zapachu w rozsądnej cenie.",
+            "author": "Alicja M.",
+            "rating": 5,
+            "tag_1": "Jak oryginał",
+            "tag_2": "Rozsądna cena"
+          }
+        },
+        "card_2": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_allie.webp",
+            "headline": "Jeden z moich ulubionych",
+            "quote": "Jeden z moich ulubionych zapachów. Dotarł naprawdę szybko. Przepięknie pachnie.",
+            "author": "Agnieszka W.",
+            "rating": 5,
+            "tag_1": "Szybka dostawa"
+          }
+        },
+        "card_3": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_461_raised.jpg",
+            "headline": "Pachnie luksusowo",
+            "quote": "Długo bezskutecznie szukałam zapachów, które pachną luksusowo i długo się utrzymują. Te są dokładnie tym, czego szukałam.",
+            "author": "Tosia N.",
+            "rating": 4,
+            "tag_1": "Luksusowy zapach",
+            "tag_2": "Trwały"
+          }
+        },
+        "card_4": {
+          "type": "card",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_260_presenting.jpg",
+            "headline": "Kupię ponownie",
+            "quote": "Przepiękny zapach. Długo się utrzymuje. Słodki i ciepły. Sprawna, szybka dostawa.",
+            "author": "Lucyna R.",
+            "rating": 5,
+            "tag_1": "Długo się utrzymuje"
+          }
+        }
+      },
+      "block_order": [
+        "card_1",
+        "card_2",
+        "card_3",
+        "card_4"
+      ]
+    },
+    "pm_bs_benefits": {
+      "type": "pm-bs-benefits",
+      "settings": {
+        "color_scheme": "scheme-5",
+        "heading": "Zapach, który <em>zostaje z Tobą</em> na cały dzień",
+        "cta_label": "Skomponuj swój zestaw",
+        "ticker_color_scheme": "scheme-3",
+        "ticker_separator": "•",
+        "ticker_speed": 30,
+        "ticker_label": "Dlaczego klienci nas wybierają",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "g1": {
+          "type": "benefit",
+          "settings": {
+            "icon": "drop",
+            "title": "20% olejków zapachowych (Eau de Parfum)",
+            "text": "Olejki z Grasse we Francji, stężenie Eau de Parfum."
+          }
+        },
+        "g2": {
+          "type": "benefit",
+          "settings": {
+            "icon": "clock",
+            "title": "Efekt, który zostanie z Tobą na dłużej",
+            "text": "Trwałość zależy od Twojej skóry."
+          }
+        },
+        "g3": {
+          "type": "benefit",
+          "settings": {
+            "icon": "leaf",
+            "title": "Bez ftalanów i parabenów",
+            "text": "Zgodnie z wymogami UE oraz IFRA."
+          }
+        },
+        "g4": {
+          "type": "benefit",
+          "settings": {
+            "icon": "shield",
+            "title": "60 dni na zwrot",
+            "text": "To nie Twój zapach? Zwrot w ciągu 60 dni."
+          }
+        },
+        "g5": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "Trwałość nawet do 12 godzin"
+          }
+        },
+        "g6": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "20% olejków zapachowych (Eau de Parfum)"
+          }
+        },
+        "g7": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "Olejki z Grasse we Francji"
+          }
+        },
+        "g8": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "60-dniowa gwarancja zwrotu pieniędzy"
+          }
+        },
+        "g9": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "Dostawa w 1-3 dni robocze"
+          }
+        },
+        "g10": {
+          "type": "ticker_item",
+          "settings": {
+            "text": "Bez testów na zwierzętach"
+          }
+        },
+        "p1": {
+          "type": "photo",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_067_smile.jpg"
+          }
+        },
+        "p2": {
+          "type": "photo",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_252_desk.jpg"
+          }
+        },
+        "p3": {
+          "type": "photo",
+          "settings": {
+            "image": "shopify://shop_images/WhatsApp_Image_2026-09-09_at_8.35.55_AM.jpg"
+          }
+        },
+        "p4": {
+          "type": "photo",
+          "settings": {
+            "image": "shopify://shop_images/mgx_real_461_hand.jpg"
+          }
+        }
+      },
+      "block_order": [
+        "g1",
+        "g2",
+        "g3",
+        "g4",
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "g5",
+        "g6",
+        "g7",
+        "g8",
+        "g9",
+        "g10"
+      ]
+    },
+    "pm_bs_strength_tabs": {
+      "type": "pm-bs-strength-tabs",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "kicker": "Stężenie",
+        "title": "Dlaczego stężenie ma znaczenie",
+        "subtitle": "Woda toaletowa zawiera znacznie mniej olejków zapachowych niż Eau de Parfum. Nasze kompozycje mają 20% (Eau de Parfum).",
+        "default_tab": 3,
+        "row_strength_label": "Intensywność",
+        "row_longevity_label": "Trwałość",
+        "row_oil_label": "Olejki zapachowe",
+        "row_summary_label": "Co otrzymujesz",
+        "footnote": "Typowe stężenia dla danego rodzaju perfum. Trwałość zależy od Twojej skóry.",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "t1": {
+          "type": "tab",
+          "settings": {
+            "label": "Woda toaletowa",
+            "sublabel": "Większość marek",
+            "is_ours": false,
+            "oil": "5 do 8% olejków zapachowych",
+            "summary": "Znacznie mniej olejków zapachowych niż w Eau de Parfum.",
+            "strength": "Lekka",
+            "longevity": "Zwykle 4 do 6 godzin"
+          }
+        },
+        "t2": {
+          "type": "tab",
+          "settings": {
+            "label": "MagyX",
+            "sublabel": "Nasze perfumy - Eau De Parfum",
+            "is_ours": true,
+            "strength": "Wyraźny, ale nie przytłaczający",
+            "longevity": "Od 8 do ponad 12 godzin",
+            "oil": "20% olejków zapachowych z Grasse (Eau de Parfum)",
+            "summary": "Stężenie 20% (Eau de Parfum). Olejki z Grasse, produkcja w Polsce."
+          }
+        },
+        "t_edp": {
+          "type": "tab",
+          "settings": {
+            "label": "Eau de Parfum",
+            "sublabel": "Większość marek",
+            "is_ours": false,
+            "strength": "Umiarkowana",
+            "longevity": "Zwykle 6 do 8 godzin",
+            "oil": "Zwykle 15 do 20% olejków zapachowych",
+            "summary": "Więcej olejków niż w wodzie toaletowej, ale nadal płacisz za nazwę marki."
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t_edp",
+        "t2"
+      ]
+    },
+    "pm_bs_vs_split": {
+      "type": "pm-bs-vs-split",
+      "settings": {
+        "image": "shopify://shop_images/Magyx_Website_01.webp",
+        "color_scheme": "scheme-5",
+        "title": "Więcej niż <em>zwykły odpowiednik</em>",
+        "subtitle": "Porównaj z innymi markami perfum inspirowanych dostępnymi w Polsce.",
+        "brand": "MagyX",
+        "dupe_title": "Inne marki",
+        "their_title": "Perfumy markowe",
+        "btn_text": "Skomponuj swój zestaw",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "v1": {
+          "type": "our_point",
+          "settings": {
+            "icon": "drop",
+            "text": "20% olejku perfumeryjnego z Grasse (Eau de Parfum)"
+          }
+        },
+        "v2": {
+          "type": "our_point",
+          "settings": {
+            "icon": "clock",
+            "text": "Do 12 godzin na skórze"
+          }
+        },
+        "v3": {
+          "type": "our_point",
+          "settings": {
+            "icon": "leaf",
+            "text": "Bez ftalanów i parabenów"
+          }
+        },
+        "v4": {
+          "type": "our_point",
+          "settings": {
+            "icon": "truck",
+            "text": "Ubezpieczona wysyłka z Polski w 1-3 dni robocze"
+          }
+        },
+        "v5": {
+          "type": "our_point",
+          "settings": {
+            "icon": "shuffle",
+            "text": "Dowolne zapachy w jednym zestawie"
+          }
+        },
+        "v6": {
+          "type": "our_point",
+          "settings": {
+            "icon": "shield",
+            "text": "60-dniowa gwarancja zwrotu pieniędzy"
+          }
+        },
+        "v7": {
+          "type": "dupe_point",
+          "settings": {
+            "text": "Często woda toaletowa, około 15% lub mniej"
+          }
+        },
+        "v8": {
+          "type": "dupe_point",
+          "settings": {
+            "text": "Wyczuwalne maksymalnie 3-4 godziny"
+          }
+        },
+        "v9": {
+          "type": "dupe_point",
+          "settings": {
+            "text": "Skład często nieujawniony"
+          }
+        },
+        "v10": {
+          "type": "dupe_point",
+          "settings": {
+            "text": "Długa wysyłka, bez ubezpieczenia"
+          }
+        },
+        "v11": {
+          "type": "dupe_point",
+          "settings": {
+            "text": "Krótki termin zwrotu albo jego brak"
+          }
+        }
+      },
+      "block_order": [
+        "v1",
+        "v2",
+        "v3",
+        "v4",
+        "v5",
+        "v6",
+        "v7",
+        "v8",
+        "v9",
+        "v10",
+        "v11"
+      ]
+    },
+    "pm_bs_review_carousel": {
+      "type": "pm-bs-review-carousel",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "heading": "Zapach, który zostaje zauważony",
+        "subheading": "Klienci o tym, co wydarzyło się po pierwszym psiknięciu",
+        "rating_text": "Ocena 4,8",
+        "verified_text": "Zweryfikowany zakup",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "r_1": {
+          "type": "review",
+          "settings": {
+            "quote": "Zapach tych perfum jest niezwykle bogaty, a flakon i jego design są przepiękne. Z przyjemnością sięgnę po nie ponownie.",
+            "author": "Eliza J.",
+            "rating": 5,
+            "verified": true,
+            "image": "shopify://shop_images/mgx_real_boxes.webp"
+          }
+        },
+        "r_2": {
+          "type": "review",
+          "settings": {
+            "quote": "O rany, uwielbiam! Dokładnie jak oryginał, a zapach utrzymuje się cały dzień!",
+            "author": "Justyna T.",
+            "rating": 4,
+            "verified": true,
+            "image": "shopify://shop_images/mgx_real_067_flatlay.jpg"
+          }
+        },
+        "r_3": {
+          "type": "review",
+          "settings": {
+            "quote": "Produkt dotarł pięknie zapakowany. Flakon był cały i wszystko było w dobrym stanie. Zapach jest idealny. Uwielbiam go, świetna jakość.",
+            "author": "Roksana S.",
+            "rating": 5,
+            "verified": true,
+            "image": "shopify://shop_images/mgx_real_211_pair.jpg"
+          }
+        },
+        "r_4": {
+          "type": "review",
+          "settings": {
+            "quote": "Gdy perfumy dotarły i zapach rozwinął się na skórze, byłem zachwycony. Po prostu rewelacja!",
+            "author": "Leon M.",
+            "rating": 5,
+            "verified": true,
+            "image": "shopify://shop_images/WhatsApp_Image_2026-09-09_at_8.35.37_AM.jpg"
+          }
+        },
+        "r_5": {
+          "type": "review",
+          "settings": {
+            "quote": "To taki zapach, dzięki któremu czujesz się zadbany. Nie przytłacza, jest w sam raz.",
+            "author": "Michał R.",
+            "rating": 5,
+            "verified": true,
+            "image": "shopify://shop_images/WhatsApp_Image_2026-09-09_at_8.33.40_AM.jpg"
+          }
+        },
+        "r_6": {
+          "type": "review",
+          "settings": {
+            "quote": "To moje pierwsze zakupy i jestem zachwycona. Wcześniej nie udało mi się znaleźć odpowiednika, który tak wiernie odtwarzałby zapach oryginału.",
+            "author": "Karolina P.",
+            "rating": 5,
+            "verified": true,
+            "image": "shopify://shop_images/mgx_real_223_boxed.jpg"
+          }
+        }
+      },
+      "block_order": [
+        "r_1",
+        "r_2",
+        "r_3",
+        "r_4",
+        "r_5",
+        "r_6"
+      ]
+    },
+    "pm_bs_compare_table": {
+      "type": "pm-bs-compare-table",
+      "settings": {
+        "ours_image": "shopify://shop_images/Magyx_Website_07.webp",
+        "color_scheme": "scheme-1",
+        "kicker": "Porównanie",
+        "title": "Dlaczego warto wybrać <em>MagyX</em>",
+        "ours_sub": "MagyX",
+        "theirs_label": "Perfumy markowe",
+        "btn_text": "Skomponuj swój zestaw",
+        "guarantee": "60-dniowa gwarancja zwrotu pieniędzy",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "c1": {
+          "type": "row",
+          "settings": {
+            "label": "Cena",
+            "ours": "Płacisz za jakość, nie za marketing",
+            "theirs": "Płacisz za nazwę marki"
+          }
+        },
+        "c2": {
+          "type": "row",
+          "settings": {
+            "label": "Olejki zapachowe",
+            "ours": "20% olejku perfumeryjnego z Grasse (Eau de Parfum)",
+            "theirs": "Stężenie zależy od marki i rodzaju perfum"
+          }
+        },
+        "c4": {
+          "type": "row",
+          "settings": {
+            "label": "Testy na zwierzętach",
+            "ours": "Bez testów na zwierzętach",
+            "theirs": "Niektóre testowane na zwierzętach"
+          }
+        },
+        "c5": {
+          "type": "row",
+          "settings": {
+            "label": "Trwałość",
+            "ours": "Od 8 do 12 godzin na skórze",
+            "theirs": "Zwykle 4 do 6 godzin"
+          }
+        },
+        "c6": {
+          "type": "row",
+          "settings": {
+            "label": "Gwarancja",
+            "ours": "60 dni na zwrot pieniędzy",
+            "theirs": "Zwykle bez zwrotu po otwarciu"
+          }
+        }
+      },
+      "block_order": [
+        "c2",
+        "c5",
+        "c6",
+        "c4",
+        "c1"
+      ]
+    },
+    "pm_bs_faq": {
+      "type": "pm-bs-faq",
+      "settings": {
+        "color_scheme": "scheme-5",
+        "title": "Najczęstsze pytania",
+        "closing_text": "<p>Masz inne pytanie? <a href=\"/policies/contact-information\">Napisz do nas</a>.</p>",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "q1": {
+          "type": "question",
+          "settings": {
+            "question": "Czym jest odpowiednik perfum?",
+            "answer": "<p>To zapach inspirowany tymi samymi nutami i z tej samej rodziny zapachowej co znane perfumy. To nie oryginał.</p>"
+          }
+        },
+        "q2": {
+          "type": "question",
+          "settings": {
+            "question": "Ile olejków zapachowych jest w perfumach?",
+            "answer": "<p>Nasze perfumy mają 20% zaperfumowania (Eau de Parfum). Dzięki temu zapach jest wyraźny i dobrze się utrzymuje, a jednocześnie nie jest przytłaczający.</p>"
+          }
+        },
+        "q3": {
+          "type": "question",
+          "settings": {
+            "question": "Jak długo utrzymuje się zapach?",
+            "answer": "<p>Nawet do 12 godzin. Trwałość zależy od Twojej skóry. Nakładaj perfumy na skórę, a nie na ubrania.</p>"
+          }
+        },
+        "q4": {
+          "type": "question",
+          "settings": {
+            "question": "Czy mogę połączyć różne zapachy w zestawie?",
+            "answer": "<p>Tak. Wybierasz dowolne zapachy z listy, w dowolnym połączeniu. Ten sam zapach możesz dodać kilka razy. Cena zależy tylko od liczby flakonów w zestawie.</p>"
+          }
+        },
+        "q5": {
+          "type": "question",
+          "settings": {
+            "question": "Gdzie powstają Wasze perfumy?",
+            "answer": "<p>Olejki pochodzą z Grasse we Francji. Perfumy produkowane są następnie w Polsce.</p>"
+          }
+        },
+        "q6": {
+          "type": "question",
+          "settings": {
+            "question": "Dlaczego Wasze zapachy są tak tanie?",
+            "answer": "<p>Skupiamy się na samym zapachu. Bez luksusowych flakonów, bez wyszukanych opakowań, bez drogich lokali i bez kosztownych współprac z influencerami. Dzięki temu możesz pachnieć luksusowo bez nadwyrężania budżetu.</p>"
+          }
+        },
+        "q7": {
+          "type": "question",
+          "settings": {
+            "question": "Kiedy dostanę zamówienie?",
+            "answer": "<p>Wysyłamy z Polski, dostawa w 1-3 dni robocze. Paczki dostarcza InPost, DPD lub GLS, do wyboru przy realizacji zamówienia.</p>"
+          }
+        },
+        "q8": {
+          "type": "question",
+          "settings": {
+            "question": "Co, jeśli zapach mi nie pasuje?",
+            "answer": "<p>Masz 60 dni gwarancji. Jeśli zapach nie jest dla Ciebie, zwróć zamówienie.</p>"
+          }
+        },
+        "q9": {
+          "type": "question",
+          "settings": {
+            "question": "Czy to oryginalne perfumy znanych marek?",
+            "answer": "<p>Nie. To zapachy inspirowane znanymi kompozycjami. MagyX nie jest powiązany z wymienionymi markami i nie jest przez nie polecany.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6",
+        "q7",
+        "q8",
+        "q9"
+      ]
+    },
+    "pm_reviews": {
+      "type": "pm-reviews",
+      "settings": {
+        "heading": "Opinie klientów",
+        "show_summary": true,
+        "mode": "all",
+        "initial_count": 6,
+        "load_more_count": 6,
+        "columns_desktop": "1",
+        "color_scheme": "scheme-1",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "pm_bs_reviews": {
+      "type": "apps",
+      "disabled": true,
+      "blocks": {
+        "judge_me_reviews_all_reviews_page_bs": {
+          "type": "shopify://apps/judge-me-reviews/blocks/all_reviews_page/61ccd3b1-a9f2-4160-9fe9-4fec8413e5d8",
+          "settings": {
+            "max_width": 1200,
+            "review_source": "store",
+            "show_all_reviews_in_same_tab": true,
+            "show_first": "product",
+            "empty_state": "empty_widget"
+          }
+        }
+      },
+      "block_order": [
+        "judge_me_reviews_all_reviews_page_bs"
+      ],
+      "settings": {
+        "include_margins": true
+      }
+    }
+  },
+  "order": [
+    "pm_bundle_save",
+    "pm_bs_review_cards",
+    "pm_bs_benefits",
+    "pm_bs_strength_tabs",
+    "pm_bs_vs_split",
+    "pm_bs_review_carousel",
+    "pm_bs_compare_table",
+    "pm_bs_faq",
+    "pm_reviews",
+    "pm_bs_reviews"
+  ]
+}

@@ -1,0 +1,180 @@
+{%- comment -%}
+  Product card (premium, FM 1:1): used by main-collection-product-grid, main-search, home-tabs,
+  home-product-tabs and popular-products. Styles: assets/pm-card.css (shared .pm-card contract).
+
+  Accepts:
+  - product: {Object} product (required)
+  - show_rating: {Boolean} Star rating under the title. Off unless the caller passes true (FM's cards show no
+    stars). Theme review data first (pm-review-stats, mode card); products it does not cover fall back to the
+    Judge.me-synced metafields reviews.rating / reviews.rating_count.
+  - lazy: {Boolean} true adds loading="lazy" to the image (optional; default eager)
+
+  FM contract kept for the price-test app: the outer element stays an <a>, the price span keeps .ab-current-price,
+  and no .product-card-wrapper[data-variant-id] is added here.
+  Price = the first available variant (sold-out products fall back to the first variant; the card still links).
+  Badges (top-left, FM): Sold out / Bestseller as white pm-badge, the first line of settings.product_card_promo_text
+  as an ink pm-badge ("2 + 1 GRATIS"), except on products tagged Bundle_Price_Show (the bundles).
+
+  tryscent.eu store data:
+  - titles always go through polish-store-text (some admin titles are still German);
+  - products tagged local_image show the bundle graphic for the visitor's storefront country
+    (snippets/bundle-image-alt), else the first image;
+  - Bestseller tag in either case (the store uses "Bestseller");
+  - "Inspired by" from the custom.inspired_by metaobject (pm-designer-thumb reads the same).
+{%- endcomment -%}
+{%- liquid
+  capture pm_title
+    render 'polish-store-text', text: product.title
+  endcapture
+  assign pm_title = pm_title | strip
+
+  assign pm_variant = nil
+  for pm_v in product.variants
+    if pm_v.available
+      assign pm_variant = pm_v
+      break
+    endif
+  endfor
+  if pm_variant == nil
+    assign pm_variant = product.selected_or_first_available_variant | default: product.variants.first
+  endif
+  assign pm_price = pm_variant.price | default: product.price
+  assign pm_compare = pm_variant.compare_at_price | default: 0
+
+  assign pm_image = product.featured_image | default: product.images.first
+  if product.tags contains 'local_image'
+    capture pm_wanted_alt
+      render 'bundle-image-alt', product: product
+    endcapture
+    assign pm_wanted_alt = pm_wanted_alt | strip
+    if pm_wanted_alt != blank
+      for pm_img in product.images
+        assign pm_img_alt = pm_img.alt | downcase
+        if pm_img_alt == pm_wanted_alt
+          assign pm_image = pm_img
+          break
+        endif
+      endfor
+    endif
+  endif
+
+  assign pm_bestseller = false
+  if product.tags contains 'bestseller' or product.tags contains 'Bestseller'
+    assign pm_bestseller = true
+  endif
+
+  assign pm_promo = ''
+  unless product.tags contains 'Bundle_Price_Show'
+    if settings.product_card_promo_text != blank
+      assign pm_promo = settings.product_card_promo_text | newline_to_br | split: '<br />' | first | strip_html | strip
+    endif
+  endunless
+
+  assign pm_badge_count = 0
+  if product.available == false
+    assign pm_badge_count = pm_badge_count | plus: 1
+  endif
+  if pm_bestseller
+    assign pm_badge_count = pm_badge_count | plus: 1
+  endif
+  if pm_promo != blank
+    assign pm_badge_count = pm_badge_count | plus: 1
+  endif
+
+  assign pm_inspired = product.metafields.custom.inspired_by.value
+-%}
+
+<a href="{{ product.url }}" class="pm-card pm-card--product">
+  <div class="pm-card__media">
+    {%- if pm_image -%}
+      <img
+        src="{{ pm_image | image_url: width: 540 }}"
+        srcset="{{ pm_image | image_url: width: 360 }} 360w, {{ pm_image | image_url: width: 540 }} 540w, {{ pm_image | image_url: width: 720 }} 720w"
+        sizes="(min-width: 990px) 25vw, 50vw"
+        alt="{{ pm_title | escape }}"
+        width="{{ pm_image.width }}"
+        height="{{ pm_image.height }}"
+        {% if lazy %}
+          loading="lazy"
+        {% endif %}
+      >
+    {%- endif -%}
+
+    {%- if pm_badge_count > 0 -%}
+      <div class="pm-card__badges">
+        {%- if product.available == false -%}
+          <span class="pm-badge">{{ 'products.product.sold_out' | t }}</span>
+        {%- endif -%}
+        {%- if pm_bestseller -%}
+          <span class="pm-badge">{{ 'premium.card.bestseller' | t }}</span>
+        {%- endif -%}
+        {%- if pm_promo != blank -%}
+          <span class="pm-badge pm-badge--ink">{{ pm_promo }}</span>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <span class="pm-card__quick" aria-hidden="true">
+      <span class="pm-card__quick-label">{{ 'premium.card.shop_now' | t }}</span>
+      {%- render 'pm-icon', icon: 'arrow-right', size: 16 -%}
+    </span>
+  </div>
+
+  <div class="pm-card__body">
+    <h3 class="pm-card__title">{{ pm_title }}</h3>
+
+    {%- liquid
+      assign pm_card_rating = ''
+      if show_rating
+        capture pm_card_rating
+          render 'pm-review-stats', product: product, mode: 'card'
+        endcapture
+        assign pm_card_rating = pm_card_rating | strip
+      endif
+    -%}
+    {%- if pm_card_rating != '' -%}
+      {{ pm_card_rating }}
+    {%- elsif show_rating and product.metafields.reviews.rating.value != blank -%}
+      {%- liquid
+        assign mgx_rating_count = product.metafields.reviews.rating_count | append: '' | plus: 0
+        assign mgx_rating_val = product.metafields.reviews.rating.value.rating | append: '' | plus: 0
+        assign mgx_rating_max = product.metafields.reviews.rating.value.scale_max | append: '' | plus: 0
+        if mgx_rating_max <= 0
+          assign mgx_rating_max = 5
+        endif
+        assign mgx_rating_max_label = mgx_rating_max | round
+        assign mgx_rating_pct = mgx_rating_val | times: 100.0 | divided_by: mgx_rating_max | round: 1 | at_least: 0 | at_most: 100
+      -%}
+      {%- if mgx_rating_count > 0 and mgx_rating_val > 0 -%}
+        <div class="mgx-card-rating pm-card__rating">
+          <span
+            class="mgx-card-rating__stars"
+            role="img"
+            aria-label="{{ 'accessibility.star_reviews_info' | t: rating_value: mgx_rating_val, rating_max: mgx_rating_max_label }}"
+            style="--mgx-rating-pct: {{ mgx_rating_pct }}%;"
+          ></span>
+          <span class="mgx-card-rating__count">
+            <span aria-hidden="true">({{ mgx_rating_count }})</span>
+            <span class="visually-hidden">{{ mgx_rating_count }} {{ 'accessibility.total_reviews' | t }}</span>
+          </span>
+        </div>
+      {%- endif -%}
+    {%- endif -%}
+
+    <span class="pm-card__rule" aria-hidden="true"></span>
+
+    {%- if pm_inspired != blank and pm_inspired.name != blank -%}
+      <p class="pm-card__meta pm-dmeta">
+        {%- render 'pm-designer-thumb', product: product -%}
+        <span class="pm-dmeta__text">{{ 'premium.card.inspired_by' | t: name: pm_inspired.name }}</span>
+      </p>
+    {%- endif -%}
+
+    <div class="pm-card__price">
+      <span class="ab-current-price">{{ pm_price | money }}</span>
+      {%- if pm_compare > pm_price -%}
+        <s class="pm-card__compare">{{ pm_compare | money }}</s>
+      {%- endif -%}
+    </div>
+  </div>
+</a>

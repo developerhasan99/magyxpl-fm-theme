@@ -1,0 +1,14 @@
+{% comment %}
+  Outputs where orders ship from, ready for "Wysyłka z {{ location }}" (premium.usp.ships_from,
+  premium.pdp.ships_next_day_html), so the Polish genitive is returned: "Polski".
+  Single source of truth for every "ships from" line in the premium redesign (WP-C2).
+
+  tryscent.eu ships every order from Poland (InPost, "Ubezpieczona wysyłka z Polski"), whatever the
+  storefront country, so FM's per-country warehouse list is not used here. Other languages are handled
+  by Weglot on the translated sentence. No flag emoji.
+
+  Usage:
+    {%- capture location -%}{% render 'ships-from-location' %}{%- endcapture -%}
+    {{ 'premium.usp.ships_from' | t: location: location }}
+{% endcomment %}
+{%- echo 'Polski' -%}

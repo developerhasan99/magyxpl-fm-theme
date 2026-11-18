@@ -1,0 +1,451 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "offer": {
+      "type": "mgx-bundle-offer",
+      "blocks": {
+        "tier_1": {
+          "type": "tier",
+          "settings": {
+            "label": "1 flakon",
+            "paid": 1,
+            "free": 0,
+            "badge": "",
+            "default_selected": false,
+            "unlock_shipping": false,
+            "unlock_box": false,
+            "unlock_perfume": false,
+            "discount_codes": "",
+            "bundle_product": "zestaw-1-flakon"
+          }
+        },
+        "tier_2": {
+          "type": "tier",
+          "settings": {
+            "label": "2+1 GRATIS",
+            "paid": 2,
+            "free": 1,
+            "badge": "Najczęściej wybierany",
+            "default_selected": false,
+            "unlock_shipping": false,
+            "unlock_box": true,
+            "unlock_perfume": false,
+            "discount_codes": "",
+            "bundle_product": "zestaw-2-1-gratis"
+          }
+        },
+        "tier_3": {
+          "type": "tier",
+          "settings": {
+            "label": "5 + bonusy",
+            "paid": 5,
+            "free": 0,
+            "badge": "Najlepsza oferta",
+            "default_selected": true,
+            "unlock_shipping": true,
+            "unlock_box": true,
+            "unlock_perfume": true,
+            "discount_codes": "",
+            "bundle_product": "zestaw-5-bonusy"
+          }
+        },
+        "gift_2": {
+          "type": "gift",
+          "settings": {
+            "key": "box",
+            "title": "Mystery Beauty Gift",
+            "product": "beauty-mystery-box",
+            "value_label": ""
+          }
+        },
+        "gift_3": {
+          "type": "gift",
+          "settings": {
+            "key": "perfume",
+            "title": "Perfum Niespodzianka 50 ml",
+            "product": "gratis-mystik-parfum-50ml",
+            "value_label": ""
+          }
+        },
+        "gift_1": {
+          "type": "gift",
+          "settings": {
+            "key": "shipping",
+            "title": "Darmowa, ubezpieczona wysyłka",
+            "product": "",
+            "list_price": 20,
+            "value_label": ""
+          }
+        }
+      },
+      "block_order": [
+        "tier_1",
+        "tier_2",
+        "tier_3",
+        "gift_2",
+        "gift_3",
+        "gift_1"
+      ],
+      "settings": {
+        "collection": "top-sellers",
+        "variant_ml": "50",
+        "max_products": 120,
+        "rating_text": "[rating]/5 · [count] opinii klientów",
+        "rating_fallback": "",
+        "heading": "Wczesna oferta Black Friday: zbuduj zestaw perfum i zgarnij gratisy",
+        "benefits": "<p>⚡ Trwałość do 12 godzin</p><p>⭐ Zaperfumowanie 20% (Eau de Parfum)</p><p>✅ Bez ftalanów i parabenów</p>",
+        "countdown_enabled": false,
+        "countdown_end": "2026-10-31 23:59",
+        "countdown_label": "Oferta kończy się za:",
+        "countdown_expired": "",
+        "countdown_eyebrow": "Wczesna oferta Black Friday",
+        "countdown_deal": "Do -51% i gratisy",
+        "countdown_offer_bg": "#184031",
+        "countdown_timer_bg": "#100f0d",
+        "tiers_heading": "Wybierz zestaw",
+        "gifts_heading": "Gratisy do Twojego zamówienia",
+        "slots_heading": "Wybierz zapachy",
+        "atc_label": "Przejdź do kasy",
+        "atc_incomplete_label": "Wybierz jeszcze [n]",
+        "show_shipping_badges": true,
+        "delivery_text": "Dostawa w 1-3 dni robocze",
+        "guarantee_text": "Do 60 dni na zwrot pieniędzy",
+        "show_payment_strip": true,
+        "checkout_redirect": true
+      }
+    },
+    "info_tabs": {
+      "type": "mgx-info-tabs",
+      "blocks": {
+        "tab_1": {
+          "type": "tab",
+          "settings": {
+            "title": "Zapach"
+          }
+        },
+        "item_1": {
+          "type": "item",
+          "settings": {
+            "emoji": "💧",
+            "heading": "Ile olejków zapachowych jest w perfumach?",
+            "text": "<p>Nasze perfumy mają 20% zaperfumowania (Eau de Parfum). Dzięki temu zapach jest wyraźny i dobrze się utrzymuje, a jednocześnie nie jest przytłaczający.</p>"
+          }
+        },
+        "item_2": {
+          "type": "item",
+          "settings": {
+            "emoji": "⏳",
+            "heading": "Jak długo utrzymuje się zapach?",
+            "text": "<p>Nawet do 12 godzin. Trwałość zależy od Twojej skóry. Nakładaj perfumy na skórę, a nie na ubrania.</p>"
+          }
+        },
+        "item_3": {
+          "type": "item",
+          "settings": {
+            "emoji": "⭐",
+            "heading": "Czym jest odpowiednik perfum?",
+            "text": "<p>To zapach inspirowany tymi samymi nutami i z tej samej rodziny zapachowej co znane perfumy. To nie oryginał.</p>"
+          }
+        },
+        "item_4": {
+          "type": "item",
+          "settings": {
+            "emoji": "✅",
+            "heading": "Gdzie powstają Wasze perfumy?",
+            "text": "<p>Olejki pochodzą z Grasse we Francji. Perfumy produkowane są następnie w Polsce.</p>"
+          }
+        },
+        "tab_2": {
+          "type": "tab",
+          "settings": {
+            "title": "Zestawy"
+          }
+        },
+        "item_5": {
+          "type": "item",
+          "settings": {
+            "emoji": "🎁",
+            "heading": "Jak działa zestaw 2+1 GRATIS?",
+            "text": "<p>Wybierasz 3 flakony, a płacisz za 2. W zestawie dostajesz też Mystery Beauty Gift.</p>"
+          }
+        },
+        "item_6": {
+          "type": "item",
+          "settings": {
+            "emoji": "⭐",
+            "heading": "Co dostanę przy zestawie 5 flakonów?",
+            "text": "<p>5 flakonów za 200 zł. W zestawie dostajesz też Mystery Beauty Gift, Perfum Niespodzianka 50 ml oraz darmową wysyłkę.</p>"
+          }
+        },
+        "item_7": {
+          "type": "item",
+          "settings": {
+            "emoji": "🛒",
+            "heading": "Czy gratisy muszę dodawać ręcznie?",
+            "text": "<p>Nie. Gratisy dodają się do koszyka automatycznie, gdy wybierzesz odpowiedni zestaw.</p>"
+          }
+        },
+        "item_8": {
+          "type": "item",
+          "settings": {
+            "emoji": "⚡",
+            "heading": "Czy mogę kupić tylko jeden flakon?",
+            "text": "<p>Tak. Opcja 1 flakon jest dostępna, ale bez gratisów.</p>"
+          }
+        },
+        "tab_3": {
+          "type": "tab",
+          "settings": {
+            "title": "Wysyłka"
+          }
+        },
+        "item_9": {
+          "type": "item",
+          "settings": {
+            "emoji": "🚚",
+            "heading": "Kiedy dostanę zamówienie?",
+            "text": "<p>Dostawa w 48 godzin na terenie Polski.</p>"
+          }
+        },
+        "item_10": {
+          "type": "item",
+          "settings": {
+            "emoji": "📦",
+            "heading": "Kto dostarcza paczki?",
+            "text": "<p>InPost, DPD lub GLS - do wyboru przy realizacji zamówienia.</p>"
+          }
+        },
+        "item_15": {
+          "type": "item",
+          "settings": {
+            "emoji": "🛡️",
+            "heading": "Co oznacza dodatkowe ubezpieczenie?",
+            "text": "<p>Do zestawu dodajemy dodatkowe ubezpieczenie, które w razie problemów z przesyłką przypisuje VIP obsługę klienta, która priorytetowo rozwiązuje problem, oraz ubezpieczenie przesyłki upoważniające do całkowitego zwrotu/wymiany zamówienia w przypadku uszkodzenia przesyłki.</p>"
+          }
+        },
+        "item_11": {
+          "type": "item",
+          "settings": {
+            "emoji": "🎁",
+            "heading": "Kiedy wysyłka jest darmowa?",
+            "text": "<p>Przy zestawie 5 + bonusy wysyłka jest darmowa.</p>"
+          }
+        },
+        "tab_4": {
+          "type": "tab",
+          "settings": {
+            "title": "Zwroty"
+          }
+        },
+        "item_12": {
+          "type": "item",
+          "settings": {
+            "emoji": "🔄",
+            "heading": "Ile mam czasu na zwrot?",
+            "text": "<p>60 dni. Wypróbuj zapach w domu, bez ryzyka.</p>"
+          }
+        },
+        "item_13": {
+          "type": "item",
+          "settings": {
+            "emoji": "✅",
+            "heading": "Co, jeśli zapach mi nie pasuje?",
+            "text": "<p>Masz 60 dni gwarancji. Jeśli zapach nie jest dla Ciebie, zwróć zamówienie.</p>"
+          }
+        },
+        "item_14": {
+          "type": "item",
+          "settings": {
+            "emoji": "💧",
+            "heading": "Czy to oryginalne perfumy znanych marek?",
+            "text": "<p>Nie. To zapachy inspirowane znanymi kompozycjami. MagyX nie jest powiązany z wymienionymi markami i nie jest przez nie polecany.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "tab_1",
+        "item_1",
+        "item_2",
+        "item_3",
+        "item_4",
+        "tab_2",
+        "item_5",
+        "item_6",
+        "item_7",
+        "item_8",
+        "tab_3",
+        "item_9",
+        "item_10",
+        "item_15",
+        "item_11",
+        "tab_4",
+        "item_12",
+        "item_13",
+        "item_14"
+      ],
+      "settings": {
+        "heading": "Najczęstsze pytania",
+        "max_width": 860,
+        "padding_top": 8,
+        "padding_bottom": 64
+      }
+    },
+    "stacks_up_zestaw": {
+      "type": "stacks-up",
+      "blocks": {
+        "stack_LGQprc": {
+          "type": "stack",
+          "settings": {
+            "our_stack": "20% olejku perfumeryjnego z Grasse (Eau de Parfum)",
+            "other_brands": "Woda toaletowa, bardzo często w okolicy 15% lub mniej. Krótko wyczuwalne"
+          }
+        },
+        "stack_EkfTtL": {
+          "type": "stack",
+          "settings": {
+            "our_stack": "Do 12 godzin na skórze",
+            "other_brands": "Wyczuwalne maksymalnie 3-4 godziny"
+          }
+        },
+        "stack_EwWwij": {
+          "type": "stack",
+          "settings": {
+            "our_stack": "Bez ftalanów i parabenów",
+            "other_brands": "Skład często nieujawniony"
+          }
+        },
+        "stack_w3Jyyc": {
+          "type": "stack",
+          "settings": {
+            "our_stack": "Ubezpieczona wysyłka z Polski w 1-3 dni robocze",
+            "other_brands": "Długa wysyłka, bez ubezpieczenia, wolna obsługa klienta"
+          }
+        },
+        "stack_dXbqXq": {
+          "type": "stack",
+          "settings": {
+            "our_stack": "Od 33,33 zł za flakon w zestawie (Oszczędzasz nawet 51%)",
+            "other_brands": "Niska cena, niska jakość"
+          }
+        }
+      },
+      "block_order": [
+        "stack_LGQprc",
+        "stack_EkfTtL",
+        "stack_EwWwij",
+        "stack_w3Jyyc",
+        "stack_dXbqXq"
+      ],
+      "name": "Stacks Up",
+      "settings": {
+        "background_color": "#ffffff",
+        "title": "Dlaczego MagyX?",
+        "subtitle": "Porównaj z innymi markami perfum inspirowanych dostępnymi w Polsce.",
+        "ours_title": "MagyX Perfume",
+        "others_title": "Inne marki na polskim rynku",
+        "button_url": "#mgx-offer",
+        "padding_top": 12,
+        "padding_bottom": 16
+      }
+    },
+    "image_and_text": {
+      "type": "image-and-text",
+      "blocks": {
+        "heading_PJdXGz": {
+          "type": "heading",
+          "settings": {
+            "content": "Strategia clean label, olejki z Francji",
+            "heading_type": "h2",
+            "font_size": 40,
+            "mobile_font_size": 24,
+            "text_color": "#000000"
+          }
+        },
+        "text_Mhwr3T": {
+          "type": "text",
+          "settings": {
+            "content": "<p>Wyprodukowane zgodnie z rygorystycznymi wymogami UE oraz IFRA - bez parabenów i ftalanów. Bezpieczne dla hormonów i Twojej skóry.</p><p>Olej perfumowy pochodzi prosto z Grasse, Francja - Stolicy perfumiarstwa</p>",
+            "mobile_content": "",
+            "font_size": 18,
+            "text_color": "#000000"
+          }
+        }
+      },
+      "block_order": [
+        "heading_PJdXGz",
+        "text_Mhwr3T"
+      ],
+      "name": "Image and Text",
+      "settings": {
+        "background_color": "#ffffff",
+        "image": "shopify://shop_images/PRODUCTION.webp",
+        "video": "shopify://files/videos/MAGYX-SITE02.mp4",
+        "rounded_image": true,
+        "image_placement": "0",
+        "mobile_image_placement": "under_heading",
+        "button_text": "",
+        "button_url": "",
+        "columns_gap": 40,
+        "rows_gap": 20,
+        "content_alignment": "center",
+        "blocks_gap": 24,
+        "padding_top": 16,
+        "padding_bottom": 72,
+        "mobile_padding_top": 8,
+        "mobile_padding_bottom": 40
+      }
+    },
+    "pm_reviews": {
+      "type": "pm-reviews",
+      "settings": {
+        "heading": "Opinie klientów",
+        "show_summary": true,
+        "mode": "all",
+        "initial_count": 6,
+        "load_more_count": 6,
+        "columns_desktop": "3",
+        "color_scheme": "scheme-1",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "judgeme_all_reviews": {
+      "type": "apps",
+      "disabled": true,
+      "blocks": {
+        "judge_me_reviews_all_reviews_page_zestaw": {
+          "type": "shopify://apps/judge-me-reviews/blocks/all_reviews_page/61ccd3b1-a9f2-4160-9fe9-4fec8413e5d8",
+          "settings": {
+            "max_width": 1200,
+            "review_source": "store",
+            "show_all_reviews_in_same_tab": true,
+            "show_first": "product",
+            "empty_state": "empty_widget"
+          }
+        }
+      },
+      "block_order": [
+        "judge_me_reviews_all_reviews_page_zestaw"
+      ],
+      "settings": {
+        "include_margins": true
+      }
+    }
+  },
+  "order": [
+    "offer",
+    "info_tabs",
+    "stacks_up_zestaw",
+    "image_and_text",
+    "pm_reviews",
+    "judgeme_all_reviews"
+  ]
+}

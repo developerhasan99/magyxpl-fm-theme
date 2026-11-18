@@ -1,0 +1,313 @@
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.mobile_padding_top }}px;
+    padding-bottom: {{ section.settings.mobile_padding_bottom }}px;
+    {% if section.settings.mobile_background_image != blank %}
+      background-image: url("{{ section.settings.mobile_background_image | image_url: width: 1920 }}");
+    {% endif %}
+    {% if section.settings.background_color != blank %}
+      background-color: {{ section.settings.background_color }};
+    {% endif %}
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+      {% if section.settings.background_image != blank %}
+        background-image: url("{{ section.settings.background_image | image_url: width: 1920 }}");
+      {% endif %}
+    }
+  }
+
+  {% if section.settings.text_color != blank %}
+    .section-{{ section.id }}-padding .homepage-hero__title,
+    .section-{{ section.id }}-padding .homepage-hero__subtitle {
+      color: {{ section.settings.text_color }};
+    }
+  {% endif %}
+
+  {% if section.settings.mobile_buttons_bottom %}
+    @media screen and (max-width: 749px) {
+      .section-{{ section.id }}-padding {
+        position: relative;
+      }
+      .section-{{ section.id }}-padding .homepage-hero__buttons {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: {{ section.settings.mobile_buttons_offset }}px;
+      }
+    }
+  {% endif %}
+
+  {% if section.settings.button_color != blank %}
+    {%- assign hero_btn_edge = section.settings.button_color | color_darken: 18 -%}
+    .section-{{ section.id }}-padding .homepage-hero__buttons a {
+      background-color: {{ section.settings.button_color }};
+      border-color: {{ hero_btn_edge }};
+      box-shadow: 0 4px 0 {{ hero_btn_edge }}, 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+    .section-{{ section.id }}-padding .homepage-hero__buttons a:hover,
+    .section-{{ section.id }}-padding .homepage-hero__buttons a:focus-visible {
+      background-color: {{ section.settings.button_color | color_darken: 6 }};
+      box-shadow: 0 2px 0 {{ hero_btn_edge }}, 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+  {% endif %}
+  {% if section.settings.button_text_color != blank %}
+    .section-{{ section.id }}-padding .homepage-hero__buttons a,
+    .section-{{ section.id }}-padding .homepage-hero__buttons a:hover {
+      color: {{ section.settings.button_text_color }};
+    }
+  {% endif %}
+
+  {% if section.settings.mobile_background_image != blank and section.settings.mobile_image_offset > 0 %}
+    @media screen and (max-width: 749px) {
+      .section-{{ section.id }}-padding {
+        position: relative;
+        isolation: isolate;
+        background-image: none;
+        background-color: {{ section.settings.mobile_image_fill }};
+      }
+      .section-{{ section.id }}-padding::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: {{ section.settings.mobile_image_offset }}px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-image: linear-gradient({{ section.settings.mobile_image_fill }}, {{ section.settings.mobile_image_fill | color_modify: 'alpha', 0 }} 60px), url("{{ section.settings.mobile_background_image | image_url: width: 1920 }}");
+        background-size: cover;
+        background-position: center;
+      }
+    }
+  {% endif %}
+{%- endstyle -%}
+
+<div id="{{ section.id }}" class="section-{{ section.id }}-padding bg-cover bg-center">
+  <div class="page-width">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 itm">
+      <div class="flex flex-col justify-center items-center text-center [&>*]:m-0 gap-6 md:px-10">
+        {% if section.settings.show_review %}
+          <div class="inline-flex items-center bg-white rounded-full px-4 py-1.5 mb-8 shadow-sm">
+            <div class="flex mgx-star mr-2">
+              <!-- 5 Stars -->
+              {% for i in (1..5) %}
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              {% endfor %}
+            </div>
+            <span class="text-xs font-bold mgx-text-muted">
+              {{ section.settings.review_text }}
+            </span>
+          </div>
+        {% endif %}
+        <h1 class="homepage-hero__title text-3xl md:text-4xl font-black tracking-tight leading-snug">{{ section.settings.title }}</h1>
+        <p class="homepage-hero__subtitle text-lg font-medium mgx-text-muted">{{ section.settings.subtitle }}</p>
+        <div class="homepage-hero__buttons flex items-center gap-4 flex-wrap justify-center">
+          <a href="{{ section.settings.button_link }}" class="mgx-btn-primary mgx-btn-3d tracking-wide font-medium no-underline px-6 py-3 text-lg rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-1">{{ section.settings.button_text }}</a>
+          {% if section.settings.secondary_button_text != blank %}
+            <a href="{{ section.settings.secondary_button_link }}" class="mgx-btn-primary mgx-btn-3d tracking-wide font-medium no-underline px-6 py-3 text-lg rounded-full transition-all duration-150 hover:-translate-y-0.5 active:translate-y-1">{{ section.settings.secondary_button_text }}</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="text-center">
+        {% if section.settings.image != blank %}
+          <img
+            class="max-w-full h-auto"
+            src="{{ section.settings.image | image_url: width: 450 }}"
+            fetchpriority="high"
+            alt="Hero Image"
+            width="450"
+            height="450">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+  {
+    "name": "TryScent Hero",
+    "class": "tryscent-hero",
+    "settings": [
+      {
+        "type": "color",
+        "id": "background_color",
+        "label": "Background Color",
+        "default": "#ffffff"
+      },
+      {
+        "type": "color",
+        "id": "text_color",
+        "label": "Title and subtitle color",
+        "info": "Clear it to go back to the theme's dark text."
+      },
+      {
+        "type": "image_picker",
+        "id": "background_image",
+        "label": "Background Image"
+      },
+      {
+        "type": "image_picker",
+        "id": "mobile_background_image",
+        "label": "Mobile Background Image"
+      },
+      {
+        "type": "image_picker",
+        "id": "image",
+        "label": "Image"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_review",
+        "label": "Show review badge",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "review_text",
+        "label": "Review Text",
+        "default": "LOVED BY 10,000 CUSTOMERS"
+      },
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Title",
+        "default": "Homepage Hero"
+      },
+      {
+        "type": "text",
+        "id": "subtitle",
+        "label": "Subtitle",
+        "default": "Homepage Hero"
+      },
+      {
+        "type": "text",
+        "id": "button_text",
+        "label": "Button Text",
+        "default": "BUY 3 GET 1 FREE - ENDS SOON!"
+      },
+      {
+        "type": "url",
+        "id": "button_link",
+        "label": "Button Link"
+      },
+      {
+        "type": "text",
+        "id": "secondary_button_text",
+        "label": "Secondary Button Text",
+        "default": "Not sure yet? Explore More →"
+      },
+      {
+        "type": "url",
+        "id": "secondary_button_link",
+        "label": "Secondary Button Link"
+      },
+      {
+        "type": "header",
+        "content": "t:sections.all.padding.section_padding_heading"
+      },
+      {
+        "type": "range",
+        "id": "padding_top",
+        "min": 0,
+        "max": 400,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_top",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "padding_bottom",
+        "min": 0,
+        "max": 400,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_bottom",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "mobile_padding_top",
+        "min": 0,
+        "max": 400,
+        "step": 4,
+        "unit": "px",
+        "label": "Mobile Padding Top",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "mobile_padding_bottom",
+        "min": 0,
+        "max": 400,
+        "step": 4,
+        "unit": "px",
+        "label": "Mobile Padding Bottom",
+        "default": 36
+      },
+      {
+        "type": "header",
+        "content": "Mobile buttons"
+      },
+      {
+        "type": "checkbox",
+        "id": "mobile_buttons_bottom",
+        "label": "Push buttons to the bottom on mobile",
+        "default": false
+      },
+      {
+        "type": "range",
+        "id": "mobile_buttons_offset",
+        "min": 0,
+        "max": 200,
+        "step": 4,
+        "unit": "px",
+        "label": "Distance from the bottom edge",
+        "default": 24
+      },
+      {
+        "type": "color",
+        "id": "button_color",
+        "label": "Button color",
+        "info": "Clear it to go back to the theme's black buttons."
+      },
+      {
+        "type": "color",
+        "id": "button_text_color",
+        "label": "Button text color"
+      },
+      {
+        "type": "header",
+        "content": "Mobile image position"
+      },
+      {
+        "type": "range",
+        "id": "mobile_image_offset",
+        "min": 0,
+        "max": 300,
+        "step": 4,
+        "unit": "px",
+        "label": "Push image down",
+        "info": "Moves the mobile background image down so the text sits above it. 0 = image fills the whole hero.",
+        "default": 0
+      },
+      {
+        "type": "color",
+        "id": "mobile_image_fill",
+        "label": "Color above the image",
+        "info": "Fills the space the image leaves at the top. Match it to the top of the image.",
+        "default": "#0b0200"
+      }
+    ],
+    "presets": [
+      {
+        "name": "TryScent Hero"
+      }
+    ]
+  }
+{% endschema %}

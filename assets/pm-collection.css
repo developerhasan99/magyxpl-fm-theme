@@ -1,0 +1,1291 @@
+/* pm-collection.css (WP-D): template-level layout for the collection and search templates
+   (loaded from layout/theme.liquid when template.name is collection or search).
+   Blocks: 1 grid, 2 sticky toolbar, 3 filter drawer (Dawn menu-drawer markup, restyled as an inline accordion),
+   4 active-filter pills, 5 load more + pm-loader, 6 empty state, 7 quiz promo tile, 8 breakpoints, 9 reduced motion,
+   10 pill toolbar (main-collection-product-grid toolbar_style "pills": snippets/facets.liquid filter_type 'pills';
+   blocks 2-4 then serve only the classic toolbar and the search template).
+   component-facets.css is injected inside the section body, after this file, so every override here beats Dawn by
+   specificity (at least one class more than the Dawn selector), never by source order. Zero importance overrides. */
+
+/* 1. Grid: Tailwind's .grid{display:grid} fights Dawn's flex grid (that is why the inline display:flex existed);
+      restore flex here and set the gaps: 10/24 at 375, 20/48 from 750 (Dawn reads these variables for item widths) */
+.premium .product-grid {
+  --grid-mobile-horizontal-spacing: 10px;
+  --grid-mobile-vertical-spacing: 24px;
+  --grid-desktop-horizontal-spacing: 20px;
+  --grid-desktop-vertical-spacing: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premium .product-grid > .grid__item {
+  margin: 0;
+  padding: 0;
+}
+
+.premium .collection {
+  position: relative;
+}
+
+/* 2. Toolbar: the facets aside sticks under the header, white, 1px line below, 56px row */
+.premium .facets-wrapper {
+  position: sticky;
+  top: var(--header-height, 64px);
+  z-index: 2;
+  box-sizing: border-box;
+  margin: 0;
+  background: rgb(var(--color-background));
+  border-bottom: 1px solid var(--pm-line);
+}
+
+/* While the filter drawer is open (or anything inside has focus) the aside must sit above the sticky header
+   (z-index 3) so the fixed overlay inside it covers the whole viewport */
+.premium .facets-wrapper:focus-within,
+.premium .facets-wrapper:has(.menu-opening) {
+  z-index: 4;
+}
+
+.premium .facets-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 16px;
+  min-height: 55px;
+  margin: 0;
+  padding: 0;
+}
+
+.premium .facets-container > * {
+  margin: 0;
+}
+
+.premium .facets-container .mobile-facets__wrapper {
+  flex: none;
+  margin: 0;
+}
+
+/* Trigger ("Filter and sort" at 375, "Filter" from 750): eyebrow token at 600, 48px tall */
+.premium .mobile-facets__open-wrapper {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premium .mobile-facets__open-wrapper::-webkit-details-marker {
+  display: none;
+}
+
+.premium .mobile-facets__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  min-height: 48px;
+  padding: 0;
+  color: rgb(var(--color-foreground));
+  font-size: var(--pm-fs-eyebrow);
+  line-height: var(--pm-lh-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.premium .mobile-facets__open > * + * {
+  margin-left: 0;
+}
+
+.premium .mobile-facets__open .svg-wrapper {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.premium .mobile-facets__open .svg-wrapper svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.premium .mobile-facets__open line,
+.premium .mobile-facets__open circle {
+  stroke: currentColor;
+}
+
+.premium .mobile-facets__open:hover {
+  color: rgb(var(--color-foreground));
+}
+
+.premium .mobile-facets__open:hover .mobile-facets__open-label {
+  text-decoration: none;
+}
+
+/* Sort (toolbar, from 750): "Sort by" 12/16 500 + native select with Dawn's caret */
+.premium .facets-container .facets:not(.facets-pill) {
+  flex: none;
+  margin-left: auto;
+}
+
+.premium .facets-container .facets__form {
+  display: block;
+  margin: 0;
+  gap: 0;
+}
+
+.premium .facet-filters {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.premium .facet-filters__field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.premium .facet-filters__label {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .facet-filters__label label {
+  cursor: pointer;
+}
+
+.premium .facet-filters__field .select {
+  width: auto;
+}
+
+.premium .facet-filters__field .select__select {
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 18px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .facet-filters__field .select .svg-wrapper {
+  right: 2px;
+  width: 10px;
+  height: 6px;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .facet-filters__field .select__select:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Product count: 12 muted, right */
+.premium .facets-container .product-count {
+  flex: none;
+  align-self: center;
+  margin: 0 0 0 auto;
+  opacity: 1;
+  text-align: right;
+}
+
+.premium .product-count__text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--pm-muted);
+}
+
+.premium .product-count .loading__spinner {
+  width: 16px;
+  padding-top: 0;
+  right: -22px;
+  top: 0;
+}
+
+/* 3. Filter drawer: full-screen white at 375, 400px from 750 (Dawn slides it in from the right) */
+.premium .mobile-facets {
+  background-color: var(--pm-overlay);
+}
+
+.premium .mobile-facets__inner {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  border: 0;
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  filter: none;
+  transition: transform var(--pm-dur-slow) var(--pm-ease-drawer);
+}
+
+.premium .mobile-facets__header {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 60px 0 20px;
+  border-bottom: 1px solid var(--pm-line);
+  background: var(--pm-white);
+  text-align: left;
+}
+
+.premium .mobile-facets__header-inner {
+  display: flex;
+  flex-grow: 1;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.premium .mobile-facets__heading {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets__count {
+  flex-grow: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--pm-muted);
+}
+
+.premium .mobile-facets__close {
+  top: 6px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets__close .svg-wrapper {
+  width: 18px;
+  height: 18px;
+}
+
+.premium .mobile-facets__main {
+  padding: 0 0 24px;
+}
+
+/* Filter groups: 48px rows, 14/20 600 uppercase .05em, hairline between, CSS plus that turns into a minus */
+.premium .mobile-facets .mobile-facets__details {
+  margin: 0;
+  border-bottom: 1px solid var(--pm-line);
+}
+
+.premium .mobile-facets .mobile-facets__summary {
+  display: block;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 20px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets .mobile-facets__summary::-webkit-details-marker {
+  display: none;
+}
+
+.premium .mobile-facets .mobile-facets__summary > div {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+}
+
+.premium .mobile-facets .mobile-facets__summary .mobile-facets__arrow,
+.premium .mobile-facets .mobile-facets__summary .icon-caret {
+  display: none;
+}
+
+.premium details.mobile-facets__details > summary.mobile-facets__summary > div::after {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  background:
+    linear-gradient(currentColor, currentColor) center / 16px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 1px 16px no-repeat;
+  transition: transform var(--pm-dur) var(--pm-ease), background-size var(--pm-dur) var(--pm-ease);
+}
+
+.premium details.mobile-facets__details[open] > summary.mobile-facets__summary > div::after {
+  background-size: 16px 1px, 1px 0;
+  transform: rotate(180deg);
+}
+
+/* The Dawn sub-panel (slides in from the right with a back button and its own footer) becomes an inline panel */
+.premium .mobile-facets .mobile-facets__submenu {
+  position: static;
+  display: block;
+  width: auto;
+  z-index: auto;
+  padding: 0 0 8px;
+  background: transparent;
+  transform: none;
+  visibility: visible;
+  overflow: visible;
+}
+
+.premium .mobile-facets .mobile-facets__main.submenu-open {
+  visibility: visible;
+}
+
+.premium .mobile-facets .mobile-facets__submenu .mobile-facets__close-button,
+.premium .mobile-facets .mobile-facets__submenu .mobile-facets__footer,
+.premium .mobile-facets .mobile-facets__submenu .mobile-facets__info {
+  display: none;
+}
+
+.premium .mobile-facets .mobile-facets__list {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.premium .mobile-facets .mobile-facets__item {
+  position: relative;
+}
+
+/* Checkbox rows: native box 16px, 1px ink, radius 2, ink fill with a white check when checked */
+.premium .mobile-facets .mobile-facets__label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 20px;
+  font-size: var(--pm-fs-body);
+  line-height: var(--pm-lh-body);
+  color: var(--pm-ink);
+  cursor: pointer;
+}
+
+.premium .mobile-facets input.mobile-facets__checkbox {
+  position: static;
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--pm-ink);
+  border-radius: 2px;
+  background: var(--pm-white);
+  z-index: auto;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.premium .mobile-facets input.mobile-facets__checkbox:checked {
+  background-color: var(--pm-ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+}
+
+.premium .mobile-facets input.mobile-facets__checkbox:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+.premium .mobile-facets .mobile-facets__label > svg,
+.premium .mobile-facets .mobile-facets__label .icon-checkmark,
+.premium .mobile-facets .mobile-facets__highlight {
+  display: none;
+}
+
+.premium .mobile-facets .mobile-facets__label.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.premium .mobile-facets .facet-checkbox__text {
+  flex: 1 1 auto;
+}
+
+/* Price range: 1px line fields, radius 4, 48px; range inputs (when a slider is wired) 4px track at 25% black,
+   ink fill, 16px white thumbs with a 2px ink border */
+.premium .mobile-facets .facets__price {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px 16px;
+}
+
+.premium .mobile-facets .facets__price .field {
+  flex: 1 1 0;
+}
+
+.premium .mobile-facets .facets__price .field-currency {
+  margin: 0;
+  align-self: center;
+  font-size: var(--pm-fs-small);
+  color: var(--pm-muted);
+}
+
+.premium .mobile-facets .facets__price .field + .field-currency {
+  margin-left: 0;
+}
+
+.premium .mobile-facets .facets__price .field__input {
+  height: 48px;
+  min-height: 48px;
+  padding: 20px 12px 8px;
+  border: 1px solid var(--pm-line);
+  border-radius: var(--pm-radius-sm);
+  box-shadow: none;
+  background: var(--pm-white);
+  font-size: var(--pm-fs-body);
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets .facets__price .field__input:focus {
+  border-color: var(--pm-ink);
+  box-shadow: none;
+  outline: 0;
+}
+
+.premium .mobile-facets .facets__price .field__label {
+  left: 12px;
+  font-size: 11px;
+  color: var(--pm-muted);
+}
+
+.premium .facets__price input[type="range"] {
+  width: 100%;
+  height: 16px;
+  margin: 8px 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.premium .facets__price input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.premium .facets__price input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.premium .facets__price input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--pm-ink);
+}
+
+.premium .facets__price input[type="range"]::-webkit-slider-thumb {
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid var(--pm-ink);
+  border-radius: 50%;
+  background: var(--pm-white);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.premium .facets__price input[type="range"]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--pm-ink);
+  border-radius: 50%;
+  background: var(--pm-white);
+}
+
+/* Sort row inside the drawer */
+.premium .mobile-facets .mobile-facets__sort {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+}
+
+.premium .mobile-facets .mobile-facets__sort label {
+  flex: none;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets .mobile-facets__sort .select {
+  width: auto;
+}
+
+.premium .mobile-facets .mobile-facets__sort .select__select {
+  height: 32px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 18px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--pm-fs-body);
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: right;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets .mobile-facets__sort .select .svg-wrapper {
+  right: 2px;
+  width: 10px;
+  height: 6px;
+  color: var(--pm-ink);
+}
+
+.premium .mobile-facets .mobile-facets__sort .select__select:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Drawer footer: Clear all (12 muted link) + Apply (Dawn primary button, already on the token) */
+.premium .mobile-facets .mobile-facets__footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--pm-line);
+  background: var(--pm-white);
+}
+
+.premium .mobile-facets .mobile-facets__footer > * {
+  width: auto;
+}
+
+.premium .mobile-facets .mobile-facets__footer > * + * {
+  margin-left: 0;
+}
+
+.premium .mobile-facets .mobile-facets__footer .button {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.premium .mobile-facets .mobile-facets__clear-wrapper {
+  flex: none;
+}
+
+.premium .mobile-facets .mobile-facets__clear {
+  font-size: var(--pm-fs-small);
+  line-height: var(--pm-lh-small);
+  color: var(--pm-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 4. Active filter pills (desktop .facets-pill row and the mobile row): full-width row under the toolbar */
+.premium .facets-container .facets-pill,
+.premium .facets-container .active-facets-mobile {
+  flex: 0 0 100%;
+  order: 10;
+  width: 100%;
+  margin: 0;
+}
+
+/* Spacing sits on the pills, not the row: with no active filter the row holds only the hidden "Remove all"
+   wrapper (Dawn hides it when it is the only child) and must add no height to the toolbar */
+.premium .active-facets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.premium .active-facets .active-facets__button {
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.premium .active-facets .active-facets__button-inner {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--pm-radius-sm);
+  box-shadow: 0 0 0 1px var(--pm-line);
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.premium .active-facets .active-facets__button:hover .active-facets__button-inner {
+  box-shadow: 0 0 0 1px var(--pm-ink);
+}
+
+.premium .active-facets .active-facets__button-wrapper {
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.premium .active-facets .active-facets__button-remove {
+  padding: 0;
+  font-size: var(--pm-fs-small);
+  line-height: var(--pm-lh-small);
+  color: var(--pm-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 5. Load more: the sentinel button stays invisible (the observer needs its box), status line with the pm-loader */
+.premium .pm-loadmore {
+  margin: 40px 0 0;
+  padding: 0;
+  text-align: center;
+}
+
+.premium .pm-loadmore__btn {
+  display: block;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.premium .pm-loadmore__status {
+  display: none;
+  margin: 0;
+  padding: 12px 0;
+  font-size: var(--pm-fs-small);
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--pm-muted);
+}
+
+/* Shown by assets/pm-collection-grid-loader.js while a page is loading */
+.premium .pm-loadmore__status.is-loading {
+  display: block;
+}
+
+.premium .pm-loader {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin: 0 12px 0 0;
+  border: 2px solid var(--pm-line);
+  border-top-color: var(--pm-ink);
+  border-radius: 50%;
+  vertical-align: middle;
+  animation: pm-spin 0.8s linear infinite;
+}
+
+@keyframes pm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 6. Empty collection / zero results */
+.premium .collection--empty .title-wrapper {
+  max-width: var(--pm-measure);
+  margin: 64px auto 96px;
+  text-align: center;
+}
+
+.premium .pm-collection__empty-title {
+  margin: 0 0 12px;
+}
+
+.premium .pm-collection__empty-text {
+  margin: 0 0 24px;
+  color: var(--pm-muted);
+}
+
+.premium .pm-collection__empty-text a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 7. Quiz promo tile (quiz-promo-card.liquid): full width 335x184 at 375, 2 columns from 990 */
+.premium .product-grid > .pm-promo-tile {
+  width: 100%;
+  max-width: 100%;
+}
+
+.premium .pm-promo-tile__link {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 184px;
+  aspect-ratio: 335 / 184;
+  overflow: hidden;
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-black);
+  color: var(--pm-white);
+  text-decoration: none;
+}
+
+.premium .pm-promo-tile__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.premium .pm-promo-tile__link::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.premium .pm-promo-tile__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 20px;
+}
+
+.premium .pm-promo-tile__title {
+  margin: 0;
+  color: var(--pm-white);
+}
+
+.premium .pm-promo-tile .pm-btn--link {
+  color: var(--pm-white);
+}
+
+/* 8. Breakpoints */
+@media (max-width: 749px) {
+  .premium .facets-container .product-count {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 750px) {
+  .premium .facets-container .product-count {
+    margin-left: 24px;
+  }
+
+  .premium .mobile-facets__inner {
+    width: 400px;
+    max-width: 400px;
+  }
+}
+
+@media (min-width: 990px) {
+  .premium .product-grid > .pm-promo-tile {
+    width: calc(50% - var(--grid-desktop-horizontal-spacing) / 2);
+    max-width: calc(50% - var(--grid-desktop-horizontal-spacing) / 2);
+  }
+
+  .premium .pm-promo-tile__link {
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+}
+
+/* 9. Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .premium .pm-loader {
+    animation: none;
+    border-color: var(--pm-ink);
+  }
+
+  .premium .mobile-facets__inner,
+  .premium details.mobile-facets__details > summary.mobile-facets__summary > div::after {
+    transition: none;
+  }
+}
+
+/* 10. Pill toolbar (toolbar_style "pills"): centred row of pill dropdowns (Sort, then one per storefront filter),
+       removable active-filter pills, then the search field (assets/pm-collection-search.css) and the count.
+       375: one horizontally scrollable row edge to edge (20px inner padding, snap, no scrollbar), each panel a
+       full-width sheet under the row. From 750: the row wraps and centres, each panel drops under its own pill.
+       The panels are absolutely positioned against .pm-facets, an ancestor of the scrolling row, so the row's
+       overflow does not clip them. Behaviour: assets/pm-collection-search.js. */
+.premium .pm-ctoolbar {
+  position: relative;
+  z-index: 2;
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+
+/* An open panel paints over the card badges (z-index 2, later in the page). That also ties the sticky
+   header (z-index 3), so assets/pm-collection-search.js closes the pill as soon as it scrolls under the
+   header; closed, the row stays below the header */
+.premium .pm-ctoolbar:has(.pm-facets__pill[open]) {
+  z-index: 3;
+}
+
+.premium .pm-facets {
+  position: relative;
+}
+
+.premium .pm-facets__form-wrap,
+.premium .pm-facets__form {
+  display: block;
+  margin: 0;
+}
+
+.premium .pm-facets__row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  margin: -4px calc(-1 * var(--pm-gutter));
+  padding: 4px var(--pm-gutter);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--pm-gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.premium .pm-facets__row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Auto margins centre the pills while they fit and fall to 0 once the row scrolls */
+.premium .pm-facets__pill {
+  flex: none;
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+.premium .pm-facets__pill:first-child {
+  margin-left: auto;
+}
+
+.premium .pm-facets__pill:last-child {
+  margin-right: auto;
+}
+
+.premium .pm-facets__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 36px;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid var(--pm-ink);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  list-style: none;
+  cursor: pointer;
+  transition: background-color var(--pm-dur) var(--pm-ease), color var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-facets__summary::-webkit-details-marker {
+  display: none;
+}
+
+.premium .pm-facets__summary:hover {
+  background: var(--pm-surface);
+}
+
+.premium .pm-facets__summary:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.premium .pm-facets__pill[open] > .pm-facets__summary {
+  background: var(--pm-ink);
+  color: var(--pm-white);
+}
+
+.premium .pm-facets__badge {
+  font-weight: 600;
+}
+
+.premium .pm-facets__chev {
+  flex: none;
+  display: block;
+  width: 14px;
+  height: 14px;
+  transition: transform var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-facets__pill[open] .pm-facets__chev {
+  transform: rotate(180deg);
+}
+
+/* Panel: 375 = full-width sheet under the row (top auto keeps it where the pill ends) */
+.premium .pm-facets__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  max-height: min(360px, 60vh);
+  margin: 8px 0 0;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--pm-line);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-white);
+  box-shadow: var(--pm-shadow-float);
+  color: var(--pm-ink);
+  text-align: left;
+}
+
+.premium .pm-facets__wrap {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.premium .pm-facets__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premium .pm-facets__item {
+  margin: 0;
+  padding: 0;
+}
+
+.premium .pm-facets__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--pm-ink);
+  cursor: pointer;
+}
+
+.premium .pm-facets__option.is-active {
+  font-weight: 500;
+}
+
+.premium .pm-facets__option.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.premium .pm-facets__option-label {
+  flex: 0 1 auto;
+}
+
+.premium .pm-facets__option-count {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--pm-muted);
+}
+
+/* 16px boxes, 1px ink, radius 2, ink with a white check when checked; the sort radios are round */
+.premium .pm-facets__check {
+  position: static;
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--pm-ink);
+  border-radius: 2px;
+  background-color: var(--pm-white);
+  cursor: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.premium .pm-facets__check:checked {
+  background-color: var(--pm-ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+}
+
+.premium .pm-facets__check.pm-facets__check--radio {
+  border-radius: 50%;
+}
+
+.premium .pm-facets__check.pm-facets__check--radio:checked {
+  background-image: none;
+  box-shadow: inset 0 0 0 3px var(--pm-white);
+}
+
+.premium .pm-facets__check:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+/* Price: highest-price note, then From / To fields (44px, radius 4) with the currency inside */
+.premium .pm-facets__note {
+  margin: 0 0 12px;
+  font-size: var(--pm-fs-small);
+  line-height: var(--pm-lh-small);
+  color: var(--pm-muted);
+}
+
+.premium .pm-facets__price {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.premium .pm-facets__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.premium .pm-facets__field-label {
+  font-size: var(--pm-fs-small);
+  line-height: 16px;
+  color: var(--pm-muted);
+}
+
+.premium .pm-facets__input-wrap {
+  position: relative;
+  display: block;
+}
+
+.premium .pm-facets__cur {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--pm-muted);
+  pointer-events: none;
+}
+
+.premium .pm-facets__input.pm-facets__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 12px 0 28px;
+  border: 1px solid var(--pm-line);
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-white);
+  box-shadow: none;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--pm-ink);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.premium .pm-facets__input.pm-facets__input:focus {
+  border-color: var(--pm-ink);
+  outline: 0;
+  box-shadow: none;
+}
+
+/* Active filters: small removable pills under the row, then "Clear all"; empty while nothing is picked */
+.premium .pm-facets__active {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.premium .pm-facets__active:empty {
+  display: none;
+}
+
+.premium .pm-facets__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--pm-ink);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.premium .pm-facets__chip:hover {
+  background: var(--pm-surface);
+}
+
+.premium .pm-facets__chip:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+.premium .pm-facets__chip-x {
+  flex: none;
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.premium .pm-facets__clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--pm-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.premium .pm-ctoolbar__count {
+  margin: 12px auto 0;
+  font-size: var(--pm-fs-small);
+  line-height: var(--pm-lh-small);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--pm-muted);
+  text-align: center;
+}
+
+/* Classic toolbar + search: the field sits under the toolbar */
+.premium .pm-ctoolbar.pm-ctoolbar--classic {
+  padding-top: 0;
+}
+
+@media (min-width: 750px) {
+  .premium .pm-ctoolbar {
+    padding-top: 16px;
+    padding-bottom: 32px;
+  }
+
+  .premium .pm-facets__row {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .premium .pm-facets__pill {
+    position: relative;
+  }
+
+  .premium .pm-facets__pill:first-child,
+  .premium .pm-facets__pill:last-child {
+    margin: 0;
+  }
+
+  .premium .pm-facets__panel {
+    top: 100%;
+    right: auto;
+    width: max-content;
+    min-width: 240px;
+    max-width: min(320px, calc(100vw - 32px));
+  }
+
+  .premium .pm-facets__panel--price {
+    min-width: 280px;
+  }
+
+  .premium .pm-facets__pill--end .pm-facets__panel {
+    left: auto;
+    right: 0;
+  }
+
+  .premium .pm-facets__option {
+    min-height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium .pm-facets__summary,
+  .premium .pm-facets__chev {
+    transition: none;
+  }
+}

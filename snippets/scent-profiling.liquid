@@ -1,0 +1,285 @@
+{%- comment -%}
+  Claim lines with check circles (magyx.co layout), then the short description and the scent description,
+  then the scent icons. Short description needs `section` passed in (render 'scent-profiling', section: section);
+  main-product then skips the short_description block's own spot under the title.
+  Params:
+    mode: 'nav' (editorial product page, premium design) renders only the quick link to the
+          "Nuty zapachowe i składniki" accordion; the claim lines move to the selling_points block and the
+          scent icons to the pdp-scent-notes band. Any other value (or none) renders everything as before.
+{%- endcomment -%}
+{%- liquid
+  assign profiling_mode = mode | default: 'full'
+-%}
+{%- if profiling_mode == 'nav' -%}
+<div class="product-quick-nav pm-quicknav">
+  <a
+    href="#expanded-notes"
+    data-scroll-to-foldable="1"
+    class="pm-quicknav__link">{{ 'premium.pdp.full_description' | t }}</a>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var foldableSummary = document.querySelector('#expanded-notes summary');
+    var foldableLink = document.querySelector('a[href="#expanded-notes"]');
+
+    if (foldableSummary && foldableLink) {
+      foldableLink.addEventListener('click', function () {
+        var details = foldableSummary.closest('details');
+        if (details && details.open) return;
+        foldableSummary.click();
+      });
+    }
+  });
+</script>
+{%- else -%}
+<ul class="list-none m-0 p-0 flex flex-col gap-2">
+  {%- assign claims = '20% olejku perfumeryjnego (Eau de Parfum), trwałość do 12 godzin|95% podobieństwa zapachu. Te same olejki z Grasse|Bez ftalanów i parabenów' | split: '|' -%}
+  {%- for claim in claims -%}
+    <li class="flex gap-2 items-center">
+      <svg class="shrink-0 mgx-text-accent" viewBox="0 0 22 22" width="22" height="22" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="11" fill="currentColor"/><path d="M6.6 11.4l2.9 2.9 5.9-5.9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="font-semibold text-black text-sm md:text-base tracking-normal">{{ claim }}</span>
+    </li>
+  {%- endfor -%}
+</ul>
+{%- if section != blank -%}
+  {%- for sdesc_block in section.blocks -%}
+    {%- if sdesc_block.type == 'short_description' -%}
+      <div class="mgx-sdesc-under-match">
+        {%- render 'short-description', block: sdesc_block, section: section, product: product -%}
+      </div>
+      {%- break -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+{% if product.metafields.custom.scent_description != blank %}
+  <p class="tracking-normal">
+    {{ product.metafields.custom.scent_description }}
+  </p>
+{% endif %}
+
+<div class="scent-attributes flex gap-6 md:gap-12">
+  {% if product.metafields.custom.fragrance_family != blank %}
+    <figure class="flex flex-col items-center text-center m-0">
+      <div class="relative h-16 flex items-center justify-center">
+        <svg
+          class="mgx-text-muted"
+          viewBox="0 0 64 64"
+          width="48"
+          height="48"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          style="position:relative;z-index:1">
+          <path d="M32 8 C24 22 18 28 18 38 a14 14 0 0 0 28 0 C46 28 40 22 32 8 z"></path>
+          <circle
+            cx="22"
+            cy="14"
+            r="3"></circle>
+          <circle
+            cx="42"
+            cy="18"
+            r="2.5"></circle>
+          <path d="M14 50 Q32 44 50 50"></path>
+        </svg>
+      </div>
+      <figcaption class="text-sm mgx-text">{{ product.metafields.custom.fragrance_family }}</figcaption>
+    </figure>
+  {% endif %}
+
+  {% if product.metafields.custom.occasion != blank %}
+
+
+    <figure class="flex flex-col items-center text-center m-0">
+      <div class="relative h-16 flex items-center justify-center">
+        <svg
+          class="mgx-text-muted"
+          viewBox="0 0 64 64"
+          width="48"
+          height="48"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          style="position:relative;z-index:1">
+          <circle
+            cx="26"
+            cy="32"
+            r="14"></circle>
+          <path
+            d="M26 22 a12 12 0 0 0 0 20 a10 10 0 0 1 0 -20 z"
+            fill="currentColor"
+            stroke="none"></path>
+          <g stroke-width="1.8">
+            <line
+              x1="50"
+              y1="12"
+              x2="50"
+              y2="6"></line>
+            <line
+              x1="50"
+              y1="26"
+              x2="50"
+              y2="20"></line>
+            <line
+              x1="42"
+              y1="13"
+              x2="38"
+              y2="9"></line>
+            <line
+              x1="58"
+              y1="13"
+              x2="62"
+              y2="9"></line>
+            <line
+              x1="42"
+              y1="19"
+              x2="38"
+              y2="23"></line>
+            <line
+              x1="58"
+              y1="19"
+              x2="62"
+              y2="23"></line>
+            <circle
+              cx="50"
+              cy="16"
+              r="3"></circle>
+          </g>
+        </svg>
+      </div>
+      <figcaption class="text-sm mgx-text">{{ product.metafields.custom.occasion }}</figcaption>
+    </figure>
+  {% endif %}
+
+  {% if product.metafields.custom.season != blank %}
+
+
+    <figure class="flex flex-col items-center text-center m-0">
+      <div class="relative h-16 flex items-center justify-center">
+        <svg
+          class="mgx-text-muted"
+          viewBox="0 0 64 64"
+          width="48"
+          height="48"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          style="position:relative;z-index:1">
+          <circle
+            cx="14"
+            cy="14"
+            r="5"
+            stroke-dasharray="2 2"></circle>
+          <g transform="translate(34 8)">
+            <line
+              x1="6"
+              y1="0"
+              x2="6"
+              y2="14"></line>
+            <line
+              x1="0"
+              y1="7"
+              x2="12"
+              y2="7"></line>
+            <line
+              x1="2"
+              y1="3"
+              x2="10"
+              y2="11"></line>
+            <line
+              x1="10"
+              y1="3"
+              x2="2"
+              y2="11"></line>
+          </g>
+          <path d="M50 26 q4 6 0 10 q-4 -4 0 -10z" fill="currentColor"></path>
+          <g stroke-dasharray="2 2">
+            <line
+              x1="10"
+              y1="36"
+              x2="56"
+              y2="36"></line>
+          </g>
+          <path d="M14 44 q2 4 6 4 q4 0 6 -4"></path>
+          <path d="M30 46 q2 4 6 4 q4 0 6 -4"></path>
+        </svg>
+      </div>
+      <figcaption class="text-sm mgx-text">{{ product.metafields.custom.season }}</figcaption>
+    </figure>
+  {% endif %}
+
+  {% if product.metafields.custom.scent_intensity != blank %}
+    <figure class="flex flex-col items-center text-center m-0">
+      <div class="relative h-16 flex items-center justify-center">
+        <svg
+          class="mgx-text-muted"
+          viewBox="0 0 64 64"
+          width="48"
+          height="48"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          style="position:relative;z-index:1">
+          <rect
+            x="22"
+            y="22"
+            width="18"
+            height="28"
+            rx="2"></rect>
+          <rect
+            x="26"
+            y="16"
+            width="10"
+            height="6"></rect>
+          <circle
+            cx="31"
+            cy="36"
+            r="2.5"></circle>
+          <g stroke-width="1.5">
+            <path
+              d="M46 18 q6 -2 10 4 q-8 2 -10 -4z"
+              fill="currentColor"
+              stroke="none"></path>
+            <path
+              d="M44 26 q6 0 10 6 q-8 0 -10 -6z"
+              fill="currentColor"
+              stroke="none"></path>
+            <path
+              d="M46 36 q6 2 10 8 q-8 -2 -10 -8z"
+              fill="currentColor"
+              stroke="none"></path>
+            <line
+              x1="42"
+              y1="22"
+              x2="52"
+              y2="20"></line>
+            <line
+              x1="42"
+              y1="30"
+              x2="52"
+              y2="32"></line>
+            <line
+              x1="42"
+              y1="38"
+              x2="52"
+              y2="42"></line>
+          </g>
+        </svg>
+      </div>
+      <figcaption class="text-sm mgx-text">
+        {% case product.metafields.custom.scent_intensity %}
+          {% when 1 %}Lekki
+        {% when 2 %}Średni
+      {% when 3 %}Mocny
+    {% else %}
+      {{ product.metafields.custom.scent_intensity }}
+  {% endcase %}
+</figcaption></figure>{% endif %}</div>
+{%- endif -%}

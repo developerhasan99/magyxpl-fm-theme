@@ -1,0 +1,368 @@
+{%- comment -%}
+  Product tabs (premium): heading + subheading, a row of uppercase tabs with an active underline, a "Zobacz wszystkie" button
+  at the right of the tab row (>= 990) or under the carousel (< 990), and one product carousel per tab.
+  Tabs are blocks: title + collection + optional filter word. With a filter the tab walks the collection
+  (paginate by 250) and keeps products whose tag or custom.fragrance_family (string or list) equals the word.
+  Tab mechanics mirror tryscent-magyxco home-tabs; the carousel, arrow rail and 375 bleed mirror popular-products.
+  Cards: snippets/product-card.liquid. Styles: assets/pm-s-home-product-tabs.css. JS: assets/pm-product-tabs.js.
+  tryscent.eu does not load Swiper globally, so the section loads Swiper 11 itself (same CDN build as the PDP
+  gallery); pm-product-tabs.js waits for window.Swiper.
+  A tab without a collection or without matching products is skipped on the storefront (shown with a note in the
+  theme editor); when no tab renders the section outputs nothing.
+{%- endcomment -%}
+{%- liquid
+  assign per_tab = section.settings.products_per_tab | default: 12
+  assign heading = section.settings.heading | strip
+  assign subheading = section.settings.subheading | strip
+  assign cta_text = section.settings.button_text | strip
+  assign fixed_link = section.settings.button_link
+  assign prev_label = 'premium.general.previous' | t
+  assign next_label = 'premium.general.next' | t
+  assign rendered = 0
+  assign first_url = ''
+  assign tabs_html = ''
+  assign panels_html = ''
+-%}
+
+{%- for block in section.blocks -%}
+  {%- liquid
+    assign tab_collection = block.settings.collection
+    assign filter_word = block.settings.filter | strip | downcase
+    assign slides_html = ''
+    assign count = 0
+    assign note = ''
+    if tab_collection == blank
+      if request.design_mode
+        assign note = 'premium.tabs.pick_collection' | t
+      else
+        continue
+      endif
+    endif
+  -%}
+
+  {%- if tab_collection != blank and filter_word == blank -%}
+    {%- capture slides_html -%}
+      {%- for product in tab_collection.products limit: per_tab -%}
+        {%- liquid
+          assign count = count | plus: 1
+          assign lazy = true
+          if rendered == 0 and count <= 4
+            assign lazy = false
+          endif
+        -%}
+        <div class="swiper-slide pm-ptabs__slide">
+          {%- render 'product-card', product: product, lazy: lazy, show_rating: section.settings.show_rating -%}
+        </div>
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- elsif tab_collection != blank -%}
+    {%- capture slides_html -%}
+      {%- paginate tab_collection.products by 250 -%}
+        {%- for product in tab_collection.products -%}
+          {%- liquid
+            assign hit = false
+            assign tags_dc = product.tags | join: '|' | downcase | split: '|'
+            if tags_dc contains filter_word
+              assign hit = true
+            else
+              assign mf = product.metafields.custom.fragrance_family
+              if mf != blank
+                if mf.type contains 'list.'
+                  assign fams = mf.value | join: '|' | downcase | split: '|'
+                else
+                  assign fams = mf.value | downcase | strip | replace: ', ', ',' | split: ','
+                endif
+                if fams contains filter_word
+                  assign hit = true
+                endif
+              endif
+            endif
+            unless hit
+              continue
+            endunless
+            assign count = count | plus: 1
+            assign lazy = true
+            if rendered == 0 and count <= 4
+              assign lazy = false
+            endif
+          -%}
+          <div class="swiper-slide pm-ptabs__slide">
+            {%- render 'product-card', product: product, lazy: lazy, show_rating: section.settings.show_rating -%}
+          </div>
+          {%- if count >= per_tab -%}
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endpaginate -%}
+    {%- endcapture -%}
+  {%- endif -%}
+
+  {%- liquid
+    if count == 0 and note == blank
+      if request.design_mode
+        assign note = 'premium.tabs.empty' | t
+      else
+        continue
+      endif
+    endif
+    assign rendered = rendered | plus: 1
+    assign tab_url = ''
+    if tab_collection != blank
+      assign tab_url = tab_collection.url
+    endif
+    if rendered == 1
+      assign first_url = tab_url
+    endif
+  -%}
+
+  {%- capture tab_html -%}
+    <button
+      type="button"
+      class="pm-ptabs__tab"
+      role="tab"
+      id="PmTab-{{ section.id }}-{{ forloop.index }}"
+      aria-controls="PmPanel-{{ section.id }}-{{ forloop.index }}"
+      aria-selected="{% if rendered == 1 %}true{% else %}false{% endif %}"
+      tabindex="{% if rendered == 1 %}0{% else %}-1{% endif %}"
+      data-block-id="{{ block.id }}"
+      data-url="{{ tab_url }}"
+      {{ block.shopify_attributes }}
+    >{{ block.settings.title | escape }}</button>
+  {%- endcapture -%}
+  {%- assign tabs_html = tabs_html | append: tab_html -%}
+
+  {%- capture panel_html -%}
+    <div
+      class="pm-ptabs__panel"
+      role="tabpanel"
+      id="PmPanel-{{ section.id }}-{{ forloop.index }}"
+      aria-labelledby="PmTab-{{ section.id }}-{{ forloop.index }}"
+      tabindex="0"
+      {% unless rendered == 1 %}hidden{% endunless %}
+    >
+      {%- if count > 0 -%}
+        <div class="pm-ptabs__slider swiper">
+          <div class="swiper-wrapper">
+            {{- slides_html -}}
+          </div>
+          <div class="pm-ptabs__nav">
+            <button type="button" class="swiper-button-prev pm-ptabs__arrow" aria-label="{{ prev_label | escape }}"></button>
+            <button type="button" class="swiper-button-next pm-ptabs__arrow" aria-label="{{ next_label | escape }}"></button>
+          </div>
+        </div>
+      {%- else -%}
+        <p class="pm-ptabs__note pm-body pm-muted">{{ note }}</p>
+      {%- endif -%}
+    </div>
+  {%- endcapture -%}
+  {%- assign panels_html = panels_html | append: panel_html -%}
+{%- endfor -%}
+
+{%- if rendered > 0 -%}
+  {%- liquid
+    assign cta_href = fixed_link
+    if cta_href == blank
+      assign cta_href = first_url
+    endif
+    if cta_href == blank
+      assign cta_href = routes.all_products_collection_url
+    endif
+  -%}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  {{ 'pm-s-home-product-tabs.css' | asset_url | stylesheet_tag }}
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer="defer"></script>
+  <script src="{{ 'pm-product-tabs.js' | asset_url }}" defer="defer"></script>
+  {%- style -%}
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top | times: 0.5 | round: 0 }}px;
+      padding-bottom: {{ section.settings.padding_bottom | times: 0.5 | round: 0 }}px;
+    }
+
+    @media screen and (min-width: 750px) {
+      .section-{{ section.id }}-padding {
+        padding-top: {{ section.settings.padding_top }}px;
+        padding-bottom: {{ section.settings.padding_bottom }}px;
+      }
+    }
+  {%- endstyle -%}
+
+  <div id="{{ section.id }}" class="pm-ptabs color-{{ section.settings.color_scheme }} section-{{ section.id }}-padding">
+    <div class="page-width">
+      {%- if heading != blank or subheading != blank -%}
+        <div class="pm-ptabs__head">
+          {%- if heading != blank -%}
+            <h2 class="pm-ptabs__title pm-title">{{ heading | escape }}</h2>
+          {%- endif -%}
+          {%- if subheading != blank -%}
+            <p class="pm-ptabs__sub pm-body-lg pm-muted">{{ subheading | escape }}</p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      <pm-product-tabs class="pm-ptabs__tabs"{% if fixed_link != blank %} data-fixed-link="true"{% endif %}>
+        <div class="pm-ptabs__bar">
+          <div class="pm-ptabs__scroll">
+            <div class="pm-ptabs__list" role="tablist"{% if heading != blank %} aria-label="{{ heading | escape }}"{% endif %}>
+              {{- tabs_html -}}
+            </div>
+          </div>
+          {%- if cta_text != blank -%}
+            <a class="pm-ptabs__cta pm-btn pm-btn--primary" href="{{ cta_href }}" data-cta>{{ cta_text | escape }}</a>
+          {%- endif -%}
+        </div>
+
+        {{- panels_html -}}
+
+        {%- if cta_text != blank -%}
+          <div class="pm-ptabs__foot">
+            <a class="pm-ptabs__cta--mobile pm-btn pm-btn--secondary" href="{{ cta_href }}" data-cta>{{ cta_text | escape }}</a>
+          </div>
+        {%- endif -%}
+      </pm-product-tabs>
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Product tabs",
+  "tag": "section",
+  "class": "pm-ptabs-section",
+  "max_blocks": 8,
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "Show star rating on cards",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Bestsellery"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "range",
+      "id": "products_per_tab",
+      "min": 4,
+      "max": 16,
+      "step": 2,
+      "label": "Products per tab",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Zobacz wszystkie"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link",
+      "info": "Leave empty to link to the active tab's collection"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding top",
+      "info": "Mobile uses half of this value",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding bottom",
+      "info": "Mobile uses half of this value",
+      "default": 80
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "Tab",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Tab title",
+          "default": "Zakładka"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "filter",
+          "label": "Filter",
+          "info": "Optional. Only products whose scent family (custom.fragrance_family) or tag equals this word, e.g. Kwiatowe"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product tabs",
+      "blocks": [
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Męskie"
+          }
+        },
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Damskie"
+          }
+        },
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Unisex"
+          }
+        },
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Nowości"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

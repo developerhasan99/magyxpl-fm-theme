@@ -1,0 +1,146 @@
+{{ 'pm-s-collection-hero.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Collection hero (premium port, WP-D). Two layouts:
+  - image (default): full-bleed collection image (collection.image desktop, custom.hero_mobile_image phone),
+    surface scrim, title + description left;
+  - compact: breadcrumb, pm-title left, description 12/19 muted with a 3-line clamp and a <details> toggle.
+  Title = the heading setting, else the collection title through polish-store-text (tryscent.eu).
+{%- endcomment -%}
+{%- liquid
+  assign layout = section.settings.layout | default: 'image'
+  assign hero_mobile_image = collection.metafields.custom.hero_mobile_image
+  assign hero_desktop_image = collection.image
+  assign desc_length = collection.description | strip_html | strip | size
+-%}
+
+{%- capture hero_title -%}
+  {%- if section.settings.heading != blank -%}
+    {{ section.settings.heading | escape }}
+  {%- else -%}
+    {%- render 'polish-store-text', text: collection.title -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- assign hero_title = hero_title | strip -%}
+
+{%- capture rating_badge -%}
+  {%- if section.settings.show_rating_badge and section.settings.rating_text != blank -%}
+    <p class="pm-chero__rating pm-eyebrow">
+      {%- render 'pm-stars', rating: 5, size: 12, class: 'pm-chero__stars' -%}
+      <span>{{ section.settings.rating_text | escape }}</span>
+    </p>
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- capture description_block -%}
+  {%- if collection.description != blank -%}
+    {%- if layout == 'compact' and desc_length > 150 -%}
+      <details class="pm-chero__details">
+        <summary class="pm-chero__summary">
+          <span class="pm-chero__clamp">{{ collection.description }}</span>
+          <span class="pm-chero__toggle">
+            <span class="pm-chero__more">{{ 'premium.general.read_more' | t }}</span>
+            <span class="pm-chero__less">{{ 'products.facets.show_less' | t }}</span>
+          </span>
+        </summary>
+      </details>
+    {%- else -%}
+      <div class="pm-chero__text">{{ collection.description }}</div>
+    {%- endif -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- if layout == 'compact' -%}
+  <div class="pm-chero pm-chero--compact page-width">
+    {%- if section.settings.show_breadcrumbs -%}
+      <nav class="pm-chero__crumbs" aria-label="{{ 'premium.collection.breadcrumbs' | t | escape }}">
+        {%- if section.settings.breadcrumb_home_label != blank -%}
+          <a href="{{ routes.root_url }}">{{ section.settings.breadcrumb_home_label | escape }}</a>
+          {%- render 'pm-icon', icon: 'chevron-right', size: 12 -%}
+        {%- endif -%}
+        <span aria-current="page">{{ hero_title }}</span>
+      </nav>
+    {%- endif -%}
+    {{ rating_badge }}
+    <h1 class="pm-chero__title pm-title">{{ hero_title }}</h1>
+    {%- if collection.description != blank -%}
+      <div class="pm-chero__desc">{{ description_block }}</div>
+    {%- endif -%}
+  </div>
+{%- else -%}
+  {%- style -%}
+    .pm-chero-{{ section.id }} {
+      {% if hero_mobile_image %}--hero-img-mobile: url('{{ hero_mobile_image | image_url: width: 750 }}');{% endif %}
+      {% if hero_desktop_image %}--hero-img-desktop: url('{{ hero_desktop_image | image_url: width: 1920 }}');{% endif %}
+    }
+  {%- endstyle -%}
+  <div class="pm-chero pm-chero--image pm-chero-{{ section.id }} relative flex h-auto min-h-[520px] items-end bg-[image:var(--hero-img-mobile)] bg-cover bg-[position:50%_10%] bg-no-repeat pb-[34px] sm:h-[clamp(430px,33.33vw,600px)] sm:min-h-0 sm:items-center sm:bg-[image:var(--hero-img-desktop)] sm:bg-[position:50%_3%] sm:pb-0">
+    <div class="pm-chero__scrim" aria-hidden="true"></div>
+    <div class="page-width relative z-[1] w-full">
+      <div class="md:w-1/2{% if hero_mobile_image != blank %} pt-80 md:pt-0{% endif %}">
+        {{ rating_badge }}
+        <h1 class="pm-chero__title">{{ hero_title }}</h1>
+        {%- if collection.description != blank -%}
+          <div class="pm-chero__desc">{{ description_block }}</div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+  {
+    "name": "Collection Hero",
+    "settings": [
+      {
+        "type": "select",
+        "id": "layout",
+        "label": "Layout",
+        "options": [
+          {
+            "value": "image",
+            "label": "Image (full-bleed collection image)"
+          },
+          {
+            "value": "compact",
+            "label": "Compact (breadcrumb, title, description)"
+          }
+        ],
+        "default": "image"
+      },
+      {
+        "type": "text",
+        "id": "heading",
+        "label": "Heading (empty = collection title)"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_breadcrumbs",
+        "label": "Show breadcrumbs (compact layout)",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "breadcrumb_home_label",
+        "label": "Breadcrumb home label",
+        "default": "Strona główna"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_rating_badge",
+        "label": "Show rating badge",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "rating_text",
+        "label": "Rating badge text",
+        "default": "Sprawdzone przez ponad 10 000 miłośników zapachów"
+      }
+    ],
+    "presets": [
+      {
+        "name": "Collection Hero"
+      }
+    ]
+  }
+{% endschema %}

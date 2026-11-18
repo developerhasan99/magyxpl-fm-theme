@@ -1,0 +1,367 @@
+{{ 'pm-s-bs-compare-table.css' | asset_url | stylesheet_tag }}
+{%- style -%}
+  .premium .pm-bs-ct--{{ section.id }} {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .premium .pm-bs-ct--{{ section.id }} {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+{%- liquid
+  assign ours_img = section.settings.ours_image | default: product.featured_image
+
+  comment
+    Tier line under our name and savings bar: read from the bundle product's variant titled "N flakon...".
+    Both fall back to the manual text settings when the product or variant is missing.
+  endcomment
+  assign ct_bundle = all_products[section.settings.bundle_handle]
+  assign ct_count = section.settings.tier_count | default: 4
+  assign ct_total = 0
+  assign ct_title = ''
+  if ct_bundle != blank
+    for v in ct_bundle.variants
+      assign v_first = v.title | split: ' ' | first | plus: 0
+      if v_first == ct_count
+        assign ct_total = v.price
+        assign ct_title = v.title
+        break
+      endif
+    endfor
+  endif
+  assign ours_note = section.settings.ours_label
+  assign save_line = section.settings.save_text
+  assign theirs_price = section.settings.theirs_sub
+  assign ct_designer = section.settings.designer_price_per_bottle | default: 0
+  if ct_designer > 0
+    assign ct_designer_cents = ct_designer | times: 100
+    if theirs_price == blank
+      assign theirs_price = ct_designer_cents | money_without_trailing_zeros | append: '+'
+    endif
+  endif
+  if ct_total > 0
+    if ours_note == blank
+      assign ct_total_money = ct_total | money_without_trailing_zeros
+      assign ours_note = section.settings.tier_note | replace: '[title]', ct_title | replace: '[price]', ct_total_money
+    endif
+    if save_line == blank and ct_designer > 0
+      assign ct_each = ct_total | divided_by: ct_count
+      assign ct_gap = ct_designer_cents | minus: ct_each
+      if ct_gap > 1000
+        assign ct_gap = ct_gap | divided_by: 1000 | times: 1000
+        assign ct_gap_money = ct_gap | money_without_trailing_zeros
+        assign save_line = section.settings.save_template | replace: '[amount]', ct_gap_money
+      endif
+    endif
+  endif
+-%}
+<div
+  id="{{ section.id }}"
+  class="pm-bs-ct pm-bs-ct--{{ section.id }} color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width">
+    <div class="pm-bs-ct__head">
+      {%- if section.settings.kicker != blank -%}
+        <p class="pm-bs-ct__kicker">{{ section.settings.kicker }}</p>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="pm-bs-ct__title">{{ section.settings.title }}</h2>
+      {%- endif -%}
+    </div>
+
+    <div class="pm-bs-ct__table" role="table" aria-label="{{ section.settings.kicker | escape }}">
+      {%- comment -%} Column heads: our photo + name + bundle price | designer bottles crossed out + crossed-out price {%- endcomment -%}
+      <div class="pm-bs-ct__row pm-bs-ct__row--head" role="row">
+        <div class="pm-bs-ct__cell pm-bs-ct__cell--label" role="columnheader"></div>
+        <div class="pm-bs-ct__cell pm-bs-ct__cell--ours pm-bs-ct__cell--head" role="columnheader">
+          {%- if ours_img != blank -%}
+            <span class="pm-bs-ct__media pm-bs-ct__media--ours">
+              {{ ours_img | image_url: width: 480 | image_tag: widths: '240, 360, 480', sizes: '(min-width: 750px) 220px, 34vw', loading: 'lazy', alt: section.settings.ours_sub }}
+            </span>
+          {%- endif -%}
+          <span class="pm-bs-ct__head-brand">{{ section.settings.ours_sub }}</span>
+          {%- if ours_note != blank -%}
+            <span class="pm-bs-ct__head-note">{{ ours_note }}</span>
+          {%- endif -%}
+        </div>
+        <div class="pm-bs-ct__cell pm-bs-ct__cell--theirs pm-bs-ct__cell--head" role="columnheader">
+          <span class="pm-bs-ct__media pm-bs-ct__media--theirs">
+            {%- if section.settings.theirs_image != blank -%}
+              {{ section.settings.theirs_image | image_url: width: 480 | image_tag: widths: '240, 360, 480', sizes: '(min-width: 750px) 220px, 34vw', loading: 'lazy', alt: section.settings.theirs_label }}
+            {%- else -%}
+              <svg class="pm-bs-ct__bottles" viewBox="0 0 120 90" aria-hidden="true" focusable="false">
+                <rect x="14" y="14" width="14" height="10" rx="2"/><rect x="6" y="24" width="30" height="58" rx="5"/>
+                <rect x="53" y="6" width="14" height="12" rx="2"/><rect x="44" y="18" width="32" height="64" rx="6"/>
+                <rect x="92" y="14" width="14" height="10" rx="2"/><rect x="84" y="24" width="30" height="58" rx="5"/>
+              </svg>
+            {%- endif -%}
+            <span class="pm-bs-ct__x" aria-hidden="true"></span>
+          </span>
+          <span class="pm-bs-ct__head-name">{{ section.settings.theirs_label }}</span>
+          {%- if theirs_price != blank -%}
+            <s class="pm-bs-ct__head-price">{{ theirs_price }}</s>
+          {%- endif -%}
+        </div>
+      </div>
+
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'row' -%}
+          <div class="pm-bs-ct__row" role="row" {{ block.shopify_attributes }}>
+            <div class="pm-bs-ct__cell pm-bs-ct__cell--label" role="rowheader">{{ block.settings.label }}</div>
+            <div class="pm-bs-ct__cell pm-bs-ct__cell--ours" role="cell">
+              <span class="pm-bs-ct__mark pm-bs-ct__mark--yes">{% render 'pm-icon', icon: 'check', size: 13, stroke: 2.5 %}</span>
+              <span class="pm-bs-ct__text">{{ block.settings.ours }}</span>
+            </div>
+            <div class="pm-bs-ct__cell pm-bs-ct__cell--theirs" role="cell">
+              <span class="pm-bs-ct__mark pm-bs-ct__mark--no">{% render 'pm-icon', icon: 'close', size: 12, stroke: 2.5 %}</span>
+              <span class="pm-bs-ct__text">{{ block.settings.theirs }}</span>
+            </div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- comment -%} Savings band closes our column (empty setting = column closes without a band) {%- endcomment -%}
+      <div class="pm-bs-ct__row pm-bs-ct__row--save" role="row">
+        <div class="pm-bs-ct__cell pm-bs-ct__cell--label" role="cell"></div>
+        <div class="pm-bs-ct__cell pm-bs-ct__cell--save{% if save_line == blank %} pm-bs-ct__cell--close{% endif %}" role="cell">{{ save_line }}</div>
+        <div class="pm-bs-ct__cell" role="cell"></div>
+      </div>
+    </div>
+
+    <div class="pm-bs-ct__footer">
+      {%- if section.settings.btn_text != blank -%}
+        <a href="{{ section.settings.btn_url | default: '#pm-bs-box' }}" class="pm-btn pm-btn--primary pm-bs-ct__cta">{{ section.settings.btn_text }}</a>
+      {%- endif -%}
+      {%- if section.settings.guarantee != blank -%}
+        <p class="pm-bs-ct__guarantee">{% render 'pm-icon', icon: 'shield', size: 16, stroke: 1.75 %}<span>{{ section.settings.guarantee }}</span></p>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Zestaw: tabela porównania",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Nadtytuł",
+      "default": "Porównanie"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "title",
+      "label": "Nagłówek",
+      "default": "Dlaczego warto wybrać <em>MagyX</em>",
+      "info": "Italic text renders in gold."
+    },
+    {
+      "type": "header",
+      "content": "Our column"
+    },
+    {
+      "type": "image_picker",
+      "id": "ours_image",
+      "label": "Photo",
+      "info": "Empty = the product's main photo. A transparent cut-out of the bottles looks best."
+    },
+    {
+      "type": "text",
+      "id": "ours_sub",
+      "label": "Brand name",
+      "default": "MagyX"
+    },
+    {
+      "type": "text",
+      "id": "ours_label",
+      "label": "Note under the name"
+    },
+    {
+      "type": "header",
+      "content": "Their column"
+    },
+    {
+      "type": "image_picker",
+      "id": "theirs_image",
+      "label": "Photo",
+      "info": "Empty = grey bottle outline. A red X is drawn over it either way."
+    },
+    {
+      "type": "text",
+      "id": "theirs_label",
+      "label": "Name",
+      "default": "Inne marki perfum inspirowanych"
+    },
+    {
+      "type": "text",
+      "id": "theirs_sub",
+      "label": "Przekreślona cena (ręcznie)",
+      "info": "Puste = cena perfum markowych z ustawienia poniżej."
+    },
+    {
+      "type": "header",
+      "content": "Footer"
+    },
+    {
+      "type": "text",
+      "id": "save_text",
+      "label": "Pasek oszczędności (ręcznie)",
+      "info": "Puste = liczone automatycznie z ceny zestawu i ceny perfum markowych poniżej."
+    },
+    {
+      "type": "text",
+      "id": "save_template",
+      "label": "Pasek oszczędności: szablon",
+      "default": "Oszczędzasz ponad [amount] na flakonie",
+      "info": "[amount] = cena perfum markowych minus nasza cena za flakon, zaokrąglone w dół do pełnych 10 zł."
+    },
+    {
+      "type": "number",
+      "id": "designer_price_per_bottle",
+      "label": "Cena perfum markowych za flakon (zł)",
+      "default": 250,
+      "info": "Punkt odniesienia dla przekreślonej ceny i paska oszczędności. 0 ukrywa oba."
+    },
+    {
+      "type": "text",
+      "id": "bundle_handle",
+      "label": "Produkt zestawu (uchwyt)",
+      "default": "zestaw-perfum"
+    },
+    {
+      "type": "range",
+      "id": "tier_count",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "label": "Liczba flakonów w linii pod nazwą",
+      "default": 4
+    },
+    {
+      "type": "text",
+      "id": "tier_note",
+      "label": "Linia pod nazwą: szablon",
+      "default": "[title] · [price]",
+      "info": "[title] to nazwa wariantu zestawu (np. 4 flakony), [price] jego cena. Pole „Note under the name” powyżej nadpisuje."
+    },
+    {
+      "type": "text",
+      "id": "btn_text",
+      "label": "Button label",
+      "default": "Skomponuj swój zestaw"
+    },
+    {
+      "type": "text",
+      "id": "btn_url",
+      "label": "Button link",
+      "info": "Puste = przewija do wyboru zapachów na tej stronie."
+    },
+    {
+      "type": "text",
+      "id": "guarantee",
+      "label": "Guarantee line",
+      "default": "60-dniowa gwarancja zwrotu pieniędzy"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 80
+    }
+  ],
+  "blocks": [
+    {
+      "type": "row",
+      "name": "Row",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Row label",
+          "default": "Trwałość"
+        },
+        {
+          "type": "text",
+          "id": "ours",
+          "label": "Ours",
+          "default": "Do 12 godzin na skórze"
+        },
+        {
+          "type": "text",
+          "id": "theirs",
+          "label": "Theirs",
+          "default": "Wyczuwalne maksymalnie 3-4 godziny"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Zestaw: tabela porównania",
+      "blocks": [
+        {
+          "type": "row",
+          "settings": {
+            "label": "Olejki zapachowe",
+            "ours": "20% olejku perfumeryjnego z Grasse",
+            "theirs": "Często woda toaletowa, około 15% lub mniej"
+          }
+        },
+        {
+          "type": "row",
+          "settings": {
+            "label": "Trwałość",
+            "ours": "Do 12 godzin na skórze",
+            "theirs": "Wyczuwalne maksymalnie 3-4 godziny"
+          }
+        },
+        {
+          "type": "row",
+          "settings": {
+            "label": "Skład",
+            "ours": "Bez ftalanów i parabenów",
+            "theirs": "Skład często nieujawniony"
+          }
+        },
+        {
+          "type": "row",
+          "settings": {
+            "label": "Wysyłka",
+            "ours": "Ubezpieczona wysyłka z Polski w 1-3 dni robocze",
+            "theirs": "Długa wysyłka, bez ubezpieczenia"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

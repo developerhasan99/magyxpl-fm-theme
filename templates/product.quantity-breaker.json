@@ -1,0 +1,573 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "blocks": {
+        "custom_rating_text_qMgzTM": {
+          "type": "custom_rating_text",
+          "settings": {
+            "text": "Ponad 10 000 opinii",
+            "rating": "4.7"
+          }
+        },
+        "title": {
+          "type": "title",
+          "settings": {}
+        },
+        "inspired_by_idtdrk": {
+          "type": "inspired_by",
+          "settings": {}
+        },
+        "selling_points_pm": {
+          "type": "selling_points",
+          "settings": {
+            "benefit_1": "20% olejku perfumeryjnego (Eau de Parfum), trwałość do 12 godzin",
+            "benefit_2": "95% podobieństwa zapachu. Te same olejki z Grasse",
+            "benefit_3": "Bez ftalanów i parabenów"
+          }
+        },
+        "custom_liquid_dWtbAc": {
+          "type": "custom_liquid",
+          "settings": {
+            "custom_liquid": "{% render 'scent-profiling', mode: 'nav' %}"
+          }
+        },
+        "custom_liquid_7fWyxx": {
+          "type": "custom_liquid",
+          "settings": {
+            "custom_liquid": "{% if product.available %}\n  {% render 'quantity-breaker' %}\n{% else %}\n  {% render 'reactive-atc' %}\n{% endif %}"
+          }
+        },
+        "trust_row_pm": {
+          "type": "trust_row",
+          "settings": {
+            "show_shipping": true,
+            "guarantee_text": "<strong>60-dniowa</strong> gwarancja zwrotu pieniędzy"
+          },
+          "disabled": true
+        },
+        "story_card_pm": {
+          "type": "story_card",
+          "settings": {
+            "heading": ""
+          }
+        },
+        "collapsible_tab_XYmgtQ": {
+          "type": "collapsible_tab",
+          "settings": {
+            "heading": "Opis",
+            "icon": "clipboard",
+            "content": "{{ product.description }}",
+            "page": ""
+          }
+        },
+        "expanded_notes_Hn9DV7": {
+          "type": "expanded_notes",
+          "settings": {}
+        },
+        "collapsible_tab_shipping": {
+          "type": "collapsible_tab",
+          "settings": {
+            "heading": "Wysyłka i zwroty",
+            "icon": "none",
+            "content": "<p>Dostawa w 48 godzin na terenie Polski. Bezpieczna wysyłka z InPost.</p><p>Wypróbuj przez 60 dni, bez ryzyka. Jeśli produkt nie spełni Twoich oczekiwań, zwrócimy Ci pełną kwotę.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_tab_ydfzCq": {
+          "type": "collapsible_tab",
+          "settings": {
+            "heading": "INFORMACJA O REKLAMIE PORÓWNAWCZEJ",
+            "icon": "star",
+            "content": "<p>Same kompozycje zapachowe nie są objęte prawami własności intelektualnej, dlatego można je zgodnie z prawem odtwarzać i wykorzystywać jako źródło inspiracji. Wyjaśnia to, dlaczego wiele markowych perfum pachnie bardzo podobnie i czasem trudno je od siebie odróżnić.</p><p>Również perfumy MagyX mogą być inspirowane innymi zapachami i opisywane jako należące do tej samej kategorii zapachowej co inne perfumy.</p><p>Wszystkie nazwy zapachów innych marek wymienione na naszej stronie należą wyłącznie do odpowiednich właścicieli praw i służą jedynie jako wskazówka dla klientów. Naszych produktów nie należy w żadnym przypadku mylić z produktami sprzedawanymi pod tymi nazwami.</p><p>MagyX nie jest powiązany z wymienionymi markami zewnętrznymi ani nie jest przez nie wspierane lub polecane.</p>",
+            "page": ""
+          }
+        }
+      },
+      "block_order": [
+        "custom_rating_text_qMgzTM",
+        "title",
+        "inspired_by_idtdrk",
+        "selling_points_pm",
+        "custom_liquid_dWtbAc",
+        "custom_liquid_7fWyxx",
+        "trust_row_pm",
+        "story_card_pm",
+        "collapsible_tab_XYmgtQ",
+        "expanded_notes_Hn9DV7",
+        "collapsible_tab_shipping",
+        "collapsible_tab_ydfzCq"
+      ],
+      "settings": {
+        "enable_sticky_info": true,
+        "color_scheme": "scheme-1",
+        "media_size": "large",
+        "constrain_to_viewport": true,
+        "media_fit": "contain",
+        "gallery_layout": "stacked",
+        "mobile_thumbnails": "hide",
+        "media_position": "left",
+        "image_zoom": "lightbox",
+        "hide_variants": true,
+        "enable_video_looping": false,
+        "padding_top": 0,
+        "padding_bottom": 64,
+        "layout": "editorial"
+      }
+    },
+    "marquee_labels_pdp": {
+      "type": "marquee-labels",
+      "blocks": {
+        "usp_1": {
+          "type": "label",
+          "settings": {
+            "label": "20% olejków zapachowych z Grasse (Eau de Parfum)"
+          }
+        },
+        "usp_2": {
+          "type": "label",
+          "settings": {
+            "label": "Trwałość do 12 godzin"
+          }
+        },
+        "usp_3": {
+          "type": "label",
+          "settings": {
+            "label": "Bez ftalanów i parabenów"
+          }
+        },
+        "usp_4": {
+          "type": "label",
+          "settings": {
+            "label": "Wegańskie i nietestowane na zwierzętach"
+          }
+        },
+        "usp_5": {
+          "type": "label",
+          "settings": {
+            "label": "Zgodne z normami IFRA"
+          }
+        }
+      },
+      "block_order": [
+        "usp_1",
+        "usp_2",
+        "usp_3",
+        "usp_4",
+        "usp_5"
+      ],
+      "settings": {
+        "style": "premium",
+        "color_scheme": "scheme-3",
+        "speed": 48,
+        "separator": "•"
+      }
+    },
+    "pdp_scent_notes": {
+      "type": "pdp-scent-notes",
+      "settings": {
+        "color_scheme": "scheme-4",
+        "heading": "Nuty zapachowe",
+        "fallback_description": true,
+        "show_attributes": true,
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "stacks_up_xtpACd": {
+      "type": "stacks-up",
+      "blocks": {
+        "stack_U4VzGa": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Stężenie olejków zapachowych",
+            "stack_subheading": "Więcej olejku = dłuższa trwałość",
+            "dupes_mark": "partial"
+          }
+        },
+        "stack_MQpHMQ": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Trwałość do 12 godzin na skórze",
+            "stack_subheading": "Dłużej niż większość markowych wód toaletowych",
+            "dupes_mark": "partial"
+          }
+        },
+        "stack_FWjJJn": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Nawet 90% taniej niż oryginał",
+            "stack_subheading": "Bez kompromisów w jakości",
+            "dupes_mark": "yes"
+          }
+        },
+        "stack_HjWL3a": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Zapach inspirowany oryginałem",
+            "stack_subheading": "Oparty na tych samych akordach zapachowych",
+            "dupes_mark": "yes"
+          }
+        },
+        "stack_JHWxX9": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Dostawa w 48 godzin",
+            "stack_subheading": "Bez wychodzenia z domu",
+            "dupes_mark": "partial"
+          }
+        },
+        "stack_UUKJ8p": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "Nietestowane na zwierzętach",
+            "stack_subheading": "Bez ftalanów i parabenów",
+            "dupes_mark": "partial"
+          }
+        },
+        "stack_Va3wDh": {
+          "type": "stack",
+          "settings": {
+            "stack_heading": "60-dniowa gwarancja zwrotu pieniędzy",
+            "stack_subheading": "Zapach Ci nie odpowiada? Oddamy całą kwotę, bez pytań",
+            "dupes_mark": "no"
+          }
+        }
+      },
+      "block_order": [
+        "stack_U4VzGa",
+        "stack_MQpHMQ",
+        "stack_FWjJJn",
+        "stack_HjWL3a",
+        "stack_JHWxX9",
+        "stack_UUKJ8p",
+        "stack_Va3wDh"
+      ],
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#ffffff",
+        "kicker": "Nasze vs. oryginał",
+        "title": "Jak wypada MagyX",
+        "ours_label": "Nasze perfumy",
+        "ours_note": "20% olejków zapachowych (Eau de Parfum)",
+        "theirs_label": "Marki luksusowe",
+        "btn_text": "Zobacz bestsellery",
+        "btn_url": "shopify://collections/bestsellers",
+        "proof_1": "Trwałość do 12 godzin",
+        "proof_2": "Ponad 10 000 zadowolonych klientów",
+        "padding_top": 80,
+        "padding_bottom": 32,
+        "subtitle": "",
+        "dupes_label": "Inne zamienniki"
+      }
+    },
+    "image_and_text_CWYTKx": {
+      "type": "image-and-text",
+      "blocks": {
+        "heading_C4wDpL": {
+          "type": "heading",
+          "settings": {
+            "content": "Produkcja w UE. Bez szkodliwej chemii.",
+            "heading_type": "h2",
+            "font_size": 30,
+            "mobile_font_size": 22
+          }
+        },
+        "text_EadgxE": {
+          "type": "text",
+          "settings": {
+            "content": "<p>Produkowane w zakładach na terenie UE, ze składników i według receptur zgodnych z wymogami IFRA.</p><ul><li>Bez ftalanów</li><li>Bez parabenów</li><li>Wegańskie</li><li>Nietestowane na zwierzętach</li><li>Z certyfikatem IFRA</li><li>Opracowane zgodnie z normami UE</li><li>Bez znanych substancji zaburzających gospodarkę hormonalną</li></ul><p>Tworzymy perfumy zgodnie z rygorystycznymi europejskimi normami kosmetycznymi</p>",
+            "mobile_content": "",
+            "font_size": 16
+          }
+        }
+      },
+      "block_order": [
+        "heading_C4wDpL",
+        "text_EadgxE"
+      ],
+      "settings": {
+        "background_color": "#ffffff",
+        "image": "shopify://shop_images/PRODUCTION.webp",
+        "rounded_image": false,
+        "image_placement": "1",
+        "mobile_image_placement": "on_top",
+        "columns_gap": 40,
+        "rows_gap": 20,
+        "content_alignment": "center",
+        "blocks_gap": 24,
+        "padding_top": 64,
+        "padding_bottom": 80,
+        "mobile_padding_top": 40,
+        "mobile_padding_bottom": 56,
+        "color_scheme": "scheme-1",
+        "eyebrow": "Bez szkodliwej chemii",
+        "layout": "card",
+        "video": "shopify://files/videos/MAGYX-SITE02.mp4"
+      }
+    },
+    "faq-section": {
+      "type": "faq-section",
+      "blocks": {
+        "collapsible_row_DCpttL": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy Wasze perfumy pachną tak samo jak oryginał?",
+            "icon": "none",
+            "row_content": "<p>Nasze zapachy oddają charakter popularnych perfum markowych. To interpretacje inspirowane oryginałem, a nie jego kopie. Każdy zapach dopracowujemy tak, by dawał to samo luksusowe wrażenie za ułamek ceny.</p>",
+            "page": ""
+          }
+        },
+        "row_accessible": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Dlaczego Wasze perfumy są tak przystępne cenowo?",
+            "icon": "none",
+            "row_content": "<p>Skupiamy się na samym zapachu. Nie inwestujemy w luksusowe flakony, wyszukane opakowania, drogie lokale ani kosztowne współprace z influencerami. Dzięki temu możesz pachnieć luksusowo bez nadwyrężania budżetu.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_row_3dNyaD": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Skąd pewność co do jakości przy takiej cenie?",
+            "icon": "none",
+            "row_content": "<p>Rezygnujemy z pośredników i marży za markę, a nie z jakości. Nasze perfumy zawierają 20% olejków zapachowych (Eau de Parfum) i powstają bez szkodliwej chemii. Dajemy 60 dni na zwrot pieniędzy, a tysiące opinii klientów potwierdzają stałą jakość.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_row_p7jMRw": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Jak długo utrzymuje się zapach?",
+            "icon": "none",
+            "row_content": "<p>Trwałość perfum zależy od indywidualnych cech skóry. Dzięki starannie dobranemu stężeniu olejków zapach utrzymuje się od <strong>8 do 12 godzin</strong>.</p><p>Aby przedłużyć trwałość zapachu, nakładaj perfumy na skórę, a nie na ubrania. Z czasem zapach rozwija się, odsłaniając głębsze nuty bazy.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_row_TGd86r": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy Wasze perfumy są wegańskie i nietestowane na zwierzętach?",
+            "icon": "none",
+            "row_content": "<p>Tak. Nasze perfumy są wegańskie i nietestowane na zwierzętach. Nie zawierają ftalanów ani parabenów.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_row_GixNBx": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy mogę zwrócić perfumy, jeśli zapach mi nie odpowiada?",
+            "icon": "none",
+            "row_content": "<p>Tak. Wypróbuj przez 60 dni, bez ryzyka. Jeśli produkt nie spełni Twoich oczekiwań, zwrócimy Ci pełną kwotę.</p>",
+            "page": ""
+          }
+        },
+        "collapsible_row_6xgRnc": {
+          "type": "collapsible_row",
+          "settings": {
+            "heading": "Czy Wasze perfumy są odpowiednie dla wrażliwej skóry?",
+            "icon": "none",
+            "row_content": "<p>Nasze perfumy spełniają wysokie standardy bezpieczeństwa, ale jak wszystkie perfumy mogą zawierać alergeny. Przy wrażliwej skórze zrób najpierw próbę na niewielkim fragmencie skóry. Wszystkie składniki są zgodne z europejskimi przepisami dotyczącymi kosmetyków.</p>",
+            "page": ""
+          }
+        }
+      },
+      "block_order": [
+        "collapsible_row_DCpttL",
+        "row_accessible",
+        "collapsible_row_3dNyaD",
+        "collapsible_row_p7jMRw",
+        "collapsible_row_TGd86r",
+        "collapsible_row_GixNBx",
+        "collapsible_row_6xgRnc"
+      ],
+      "settings": {
+        "caption": "",
+        "heading": "Najczęściej zadawane pytania",
+        "heading_size": "h1",
+        "heading_alignment": "center",
+        "closing_text": "<p>Masz więcej pytań? <a href=\"/pages/contact\">Napisz do nas</a>.</p>",
+        "layout": "row",
+        "container_color_scheme": "scheme-1",
+        "color_scheme": "scheme-5",
+        "open_first_collapsible_row": false,
+        "image_ratio": "adapt",
+        "desktop_layout": "image_second",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "pm_reviews": {
+      "type": "pm-reviews",
+      "settings": {
+        "heading": "Opinie klientów",
+        "show_summary": true,
+        "mode": "product",
+        "initial_count": 6,
+        "load_more_count": 6,
+        "columns_desktop": "1",
+        "color_scheme": "scheme-1",
+        "padding_top": 80,
+        "padding_bottom": 64
+      }
+    },
+    "image_with_text_hmaWn4": {
+      "type": "image-with-text",
+      "blocks": {
+        "caption_pm": {
+          "type": "caption",
+          "settings": {
+            "caption": "60-dniowa gwarancja zwrotu pieniędzy",
+            "text_style": "caption-with-letter-spacing",
+            "text_size": "small"
+          }
+        },
+        "heading_pm": {
+          "type": "heading",
+          "settings": {
+            "heading": "Wypróbuj, a potem zdecyduj",
+            "heading_size": "h2"
+          }
+        },
+        "text_pm": {
+          "type": "text",
+          "settings": {
+            "text": "<p>W MagyX wierzymy w zapachy, w których czujesz się świetnie. Dlatego dajemy 60-dniową gwarancję zwrotu pieniędzy, żebyś mógł kupować bez obaw.</p><p>Jeśli zapach Cię nie zachwyci, zwróć go w ciągu 60 dni, a oddamy całą kwotę. Bez stresu i bez komplikacji, tylko pewność, że znajdziesz zapach, który naprawdę pokochasz.</p>",
+            "text_style": "body"
+          }
+        },
+        "button_pm": {
+          "type": "button",
+          "settings": {
+            "button_label": "Zasady zwrotów",
+            "button_link": "/policies/refund-policy",
+            "button_style_secondary": true
+          }
+        }
+      },
+      "block_order": [
+        "caption_pm",
+        "heading_pm",
+        "text_pm",
+        "button_pm"
+      ],
+      "custom_css": [],
+      "name": "t:sections.image-with-text.presets.name",
+      "settings": {
+        "image": "shopify://shop_images/MAGYX_Site_02_1.webp",
+        "height": "medium",
+        "desktop_image_width": "large",
+        "layout": "image_first",
+        "image_behavior": "none",
+        "content_layout": "overlap",
+        "desktop_content_position": "middle",
+        "desktop_content_alignment": "left",
+        "mobile_content_alignment": "left",
+        "section_color_scheme": "scheme-1",
+        "color_scheme": "scheme-1",
+        "padding_top": 40,
+        "padding_bottom": 48,
+        "video": "shopify://files/videos/MAGYX-SITE02.mp4"
+      }
+    },
+    "you_may_like_qhFiPV": {
+      "type": "you-may-like",
+      "name": "You May Like",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#ffffff",
+        "title": "Może Ci się również spodobać",
+        "description": "",
+        "collection": "bestsellers",
+        "products_count": 8,
+        "button_text": "Zobacz wszystkie",
+        "button_link": "shopify://collections/all",
+        "padding_top": 48,
+        "padding_bottom": 48
+      }
+    },
+    "feature_highlights_F49xPK": {
+      "type": "feature-ships-from",
+      "blocks": {
+        "ships": {
+          "type": "ships_from",
+          "settings": {
+            "icon": "truck"
+          }
+        },
+        "perks_yTdgqz": {
+          "type": "perks",
+          "settings": {
+            "icon": "shield",
+            "perk_title": "60-dniowa gwarancja zwrotu pieniędzy",
+            "perk_content": "To nie Twój zapach? Zwrot w ciągu 60 dni."
+          }
+        },
+        "perks_7zj6gB": {
+          "type": "perks",
+          "settings": {
+            "icon": "clock",
+            "perk_title": "Trwałość od 8 do 12 godzin",
+            "perk_content": "Dzięki 20% stężeniu olejków zapachowych (Eau de Parfum)."
+          }
+        },
+        "perks_x8n9DF": {
+          "type": "perks",
+          "settings": {
+            "icon": "sparkle",
+            "perk_title": "Wyprodukowano w Europie",
+            "perk_content": "Bez ftalanów i parabenów. Z certyfikatem IFRA."
+          }
+        }
+      },
+      "block_order": [
+        "ships",
+        "perks_yTdgqz",
+        "perks_7zj6gB",
+        "perks_x8n9DF"
+      ],
+      "name": "Feature Highlights",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#ffffff",
+        "show_legacy_ships_from": false,
+        "padding_top": 48,
+        "padding_bottom": 80
+      }
+    },
+    "1751863713a9594609": {
+      "type": "apps",
+      "settings": {
+        "include_margins": true
+      }
+    },
+    "floating-atc": {
+      "type": "floating-atc",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "marquee_labels_pdp",
+    "pdp_scent_notes",
+    "stacks_up_xtpACd",
+    "image_and_text_CWYTKx",
+    "faq-section",
+    "pm_reviews",
+    "image_with_text_hmaWn4",
+    "you_may_like_qhFiPV",
+    "feature_highlights_F49xPK",
+    "1751863713a9594609",
+    "floating-atc"
+  ]
+}

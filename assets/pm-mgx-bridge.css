@@ -1,0 +1,34 @@
+/* pm-mgx-bridge.css (WP-A): MAGYX neutralisation under the premium layer.
+   assets/magyx-brand.css declares the --mgx-* tokens on :root (Pine #184031 accent, Silver #C7C9CB,
+   Graphite #3A3A3C, Black #100F0D). About 45 files use them through the mgx-* utilities and
+   var(--mgx-*). This file re-declares every brand and role token on .premium (the <body>), so all
+   descendants inherit the FM monochrome palette without editing those files or magyx-brand.css.
+   Roles (--mgx-accent, --mgx-star ...) are re-declared too: a custom property that references another
+   one is resolved where it is declared (:root), so changing only the base tokens would not reach them.
+   Values point at the --pm-* tokens bridged from theme settings in layout/theme.liquid.
+   The *-rgb triplets cannot be derived from a hex variable, so they are literal (ink #232323, line #e7e7e7).
+   Loaded right after pm-base.css. Component-local tokens (--mgx-bo-*, --mgx-stories-*, --mgx-tabs-*) are
+   not touched here; their owners restyle them. */
+
+.premium {
+  --mgx-black: var(--pm-ink, #232323);
+  --mgx-black-rgb: 35, 35, 35;
+  --mgx-white: #ffffff;
+  --mgx-white-rgb: 255, 255, 255;
+  --mgx-silver: var(--pm-line, #e7e7e7);
+  --mgx-silver-rgb: 231, 231, 231;
+  --mgx-graphite: var(--pm-ink, #232323);
+  --mgx-graphite-rgb: 35, 35, 35;
+  --mgx-amber: var(--pm-ink, #232323);
+  --mgx-amber-rgb: 35, 35, 35;
+
+  --mgx-hairline: var(--pm-line, #e7e7e7);
+  --mgx-text: var(--pm-ink, #232323);
+  --mgx-text-muted: var(--pm-muted, #707070);
+  --mgx-cta: var(--pm-ink, #232323);
+  --mgx-cta-hover: var(--pm-black, #000000);
+  --mgx-cta-text: #ffffff;
+  --mgx-accent: var(--pm-ink, #232323);
+  --mgx-star: var(--pm-ink, #232323);
+  --mgx-selected: var(--pm-ink, #232323);
+}

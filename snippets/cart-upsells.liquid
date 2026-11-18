@@ -1,0 +1,141 @@
+{% comment %}
+  Cart drawer upsells ("Dobierz do zamówienia"), premium re-skin (WP-B, port of FM WP-F).
+  Renders only when the collection in settings.cart_drawer_collection exists and has products (unchanged behaviour).
+  Cards use the shared card contract (pm-card pm-card--row) plus pm-cart-upsell hooks styled in assets/pm-cart.css.
+  Products already in the cart and sold-out products are skipped; at most 3 rows render (was a 2-up slider of 6).
+  Titles keep the polish-store-text rendering.
+
+  Usage:
+  {% render 'cart-upsells' %}
+{% endcomment %}
+
+{%- liquid
+  assign upsell_collection = collections[settings.cart_drawer_collection]
+  assign upsell_limit = 3
+-%}
+
+<script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+
+{%- if upsell_collection and upsell_collection.all_products.size > 0 -%}
+  <div class="pm-cart-upsells">
+    <h3 class="pm-cart-upsells__heading pm-eyebrow">{{ 'premium.cart.pair_it_with' | t }}</h3>
+    <div class="pm-cart-upsells__list">
+      {%- assign shown = 0 -%}
+      {%- for product in upsell_collection.all_products -%}
+        {%- assign in_cart = false -%}
+        {%- for item in cart.items -%}
+          {%- if item.product.id == product.id -%}
+            {%- assign in_cart = true -%}
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if in_cart or product.available == false -%}
+          {%- continue -%}
+        {%- endif -%}
+
+        {%- assign upsell_variant = product.selected_or_first_available_variant -%}
+        {%- assign product_form_id = 'cart-upsell-form-' | append: product.id -%}
+
+        <product-form class="product-form pm-card pm-card--row pm-cart-upsell">
+          {%- form 'product',
+            product,
+            id: product_form_id,
+            class: 'form pm-cart-upsell__form',
+            novalidate: 'novalidate'
+          -%}
+            {%- if upsell_variant.requires_selling_plan -%}
+              <input
+                type="hidden"
+                name="selling_plan"
+                value="{{ upsell_variant.selling_plan_allocations.first.selling_plan_id }}">
+            {%- endif -%}
+
+            <a href="{{ product.url }}" class="pm-card__media pm-cart-upsell__media" tabindex="-1" aria-hidden="true">
+              {%- if product.featured_image -%}
+                <img
+                  src="{{ product.featured_image | image_url: width: 112 }}"
+                  srcset="{{ product.featured_image | image_url: width: 56 }} 56w, {{ product.featured_image | image_url: width: 112 }} 112w, {{ product.featured_image | image_url: width: 168 }} 168w"
+                  sizes="56px"
+                  alt=""
+                  width="56"
+                  height="56"
+                  loading="lazy">
+              {%- endif -%}
+            </a>
+
+            <div class="pm-cart-upsell__info">
+              <a href="{{ product.url }}" class="pm-card__title pm-cart-upsell__title">
+                {%- render 'polish-store-text', text: product.title -%}
+              </a>
+              <span class="pm-card__price pm-cart-upsell__price" data-pm-upsell-price>{{ upsell_variant.price | money }}</span>
+              {%- if product.has_only_default_variant -%}
+                <input type="hidden" name="id" value="{{ upsell_variant.id }}">
+              {%- else -%}
+                <label class="visually-hidden" for="{{ product_form_id }}-id">{{ 'sections.cart_upsells.select_variant' | t }}</label>
+                <select
+                  id="{{ product_form_id }}-id"
+                  name="id"
+                  class="pm-cart-upsell__select"
+                  data-pm-upsell-select>
+                  {%- for variant in product.variants -%}
+                    <option
+                      value="{{ variant.id }}"
+                      data-price="{{ variant.price | money }}"
+                      {% if variant.id == upsell_variant.id %}
+                        selected
+                      {% endif %}
+                      {% unless variant.available %}
+                        disabled
+                      {% endunless %}
+                    >
+                      {{- variant.title | escape -}}
+                    </option>
+                  {%- endfor -%}
+                </select>
+              {%- endif -%}
+            </div>
+
+            <button
+              type="submit"
+              name="add"
+              class="product-form__submit button pm-btn pm-btn--primary pm-btn--mini pm-cart-upsell__add">
+              <span>{{ 'premium.cart.add' | t }}</span>
+              {%- render 'loading-spinner' -%}
+            </button>
+
+            <div class="product-form__error-message-wrapper pm-cart-upsell__error" role="alert" hidden>
+              <span class="svg-wrapper">
+                {%- render 'icon-error' -%}
+              </span>
+              <span class="product-form__error-message"></span>
+            </div>
+          {%- endform -%}
+        </product-form>
+
+        {%- assign shown = shown | plus: 1 -%}
+        {%- if shown == upsell_limit -%}
+          {%- break -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+
+  <script>
+    /* Keeps the visible price in step with the chosen variant. Bound once on document, so it survives the
+       innerHTML re-renders the cart drawer does after every add/change. */
+    (function () {
+      if (window.pmCartUpsellsBound) return;
+      window.pmCartUpsellsBound = true;
+      document.addEventListener('change', function (event) {
+        var select = event.target;
+        if (!select || !select.matches || !select.matches('[data-pm-upsell-select]')) return;
+        var card = select.closest('.pm-cart-upsell');
+        var price = card && card.querySelector('[data-pm-upsell-price]');
+        var option = select.options[select.selectedIndex];
+        if (price && option && option.getAttribute('data-price')) {
+          price.textContent = option.getAttribute('data-price');
+        }
+      });
+    })();
+  </script>
+{%- endif -%}

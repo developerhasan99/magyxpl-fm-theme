@@ -1,0 +1,203 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "name": "t:sections.header.name",
+  "type": "header",
+  "sections": {
+    "offer_annoucement_4tnBfB": {
+      "type": "offer-annoucement",
+      "disabled": true,
+      "name": "Offer Announcement",
+      "settings": {
+        "background_color": "#000000",
+        "background_color_2": "#e32402",
+        "prepend_text": "Tylko z okazji Dnia Kobiet",
+        "link_text": "Kup 3 – 1 gratis",
+        "append_text": "",
+        "link": "shopify://collections/best-sellers"
+      }
+    },
+    "offer_timebar_4WVn7P": {
+      "type": "offer-timebar",
+      "blocks": {
+        "payment_icon_MmG3KL": {
+          "type": "payment_icon",
+          "settings": {
+            "use_country_flag": false,
+            "icon": "shopify://shop_images/inpost.png",
+            "label": "Szybko"
+          }
+        },
+        "payment_icon_Fgdaze": {
+          "type": "payment_icon",
+          "settings": {
+            "use_country_flag": false,
+            "icon": "shopify://shop_images/poland_flag.png",
+            "label": "Z Polski"
+          }
+        },
+        "payment_icon_tUQYaX": {
+          "type": "payment_icon",
+          "disabled": true,
+          "settings": {
+            "use_country_flag": false,
+            "icon": "shopify://shop_images/800c98d03dc73f77225bfa90300384e0370c7cff.png",
+            "label": "Bezpiecznie"
+          }
+        },
+        "payment_icon_HNd7bU": {
+          "type": "payment_icon",
+          "settings": {
+            "use_country_flag": false,
+            "icon": "shopify://shop_images/blik.DeRA9syl.svg",
+            "label": "Wygodnie"
+          }
+        },
+        "payment_icon_EMjaQY": {
+          "type": "payment_icon",
+          "settings": {
+            "use_country_flag": false,
+            "icon": "shopify://shop_images/visa.CjeXrSa5.svg",
+            "label": "Bezpiecznie"
+          }
+        }
+      },
+      "block_order": [
+        "payment_icon_MmG3KL",
+        "payment_icon_Fgdaze",
+        "payment_icon_tUQYaX",
+        "payment_icon_HNd7bU",
+        "payment_icon_EMjaQY"
+      ],
+      "name": "Offer Timebar",
+      "settings": {
+        "style": "minimal",
+        "color_scheme": "scheme-4",
+        "enable_top_bar": false,
+        "enable_timer": false,
+        "enable_badges": false,
+        "primary_color": "#000000",
+        "secondary_color": "#ffffff",
+        "timer_box_color": "#100f0d",
+        "timer_label_color": "#ffffff",
+        "top_banner_text": "Promocja Jesienna",
+        "prepend_text": "",
+        "countdown_date": "",
+        "append_text": "Wczesny Black Friday: zbuduj swój zestaw i zaoszczędź 40%",
+        "cta_text": "Kup teraz",
+        "link": "shopify://products/zestaw-perfum",
+        "goal_line_enable": true,
+        "goal_line_markets": "",
+        "goal_line_lang": "pl",
+        "goal_steps": "2:25, 4:30, 6:35, 8:40",
+        "goal_bs_handle": "zestaw-perfum",
+        "goal_text_empty": "Dodaj [n] i zyskaj [pct] RABATU",
+        "goal_text_step": "Dodaj jeszcze [n] i zyskaj [pct] RABATU",
+        "goal_text_unlocked": "[rewards] odblokowane",
+        "goal_text_done": "Masz [pct] RABATU",
+        "goal_label_pct": "[pct] RABATU",
+        "goal_word_one": "flakon",
+        "goal_word_many": "flakony"
+      }
+    },
+    "blocky_lys_scrolling_text_bar_GLkKNr": {
+      "type": "blocky-lys-scrolling-text-bar",
+      "blocks": {
+        "text_XmbGh": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "DARMOWA DOSTAWA OD 190 PLN"
+          }
+        },
+        "text_KwnK4Y": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "ZAPROJEKTOWANE Z MYŚLĄ O TWOIM ZAPACHU"
+          }
+        },
+        "text_39tt9p": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "KUP 3 — 1 GRATIS"
+          }
+        },
+        "text_DiPtyi": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "DARMOWA DOSTAWA OD 45€"
+          }
+        },
+        "text_7Mhc9j": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "TryScent zmienia się w MagyX!"
+          }
+        },
+        "text_QD7JEH": {
+          "type": "text",
+          "settings": {
+            "text": "Beauty-mysteryboxy - ilość ograniczona!"
+          }
+        }
+      },
+      "block_order": [
+        "text_XmbGh",
+        "text_KwnK4Y",
+        "text_39tt9p",
+        "text_DiPtyi",
+        "text_7Mhc9j",
+        "text_QD7JEH"
+      ],
+      "disabled": true,
+      "settings": {
+        "text_size": "1.5",
+        "background_color": "#100f0d",
+        "text_color": "#ffffff",
+        "speed": 1,
+        "text_spacing": 3,
+        "padding_top": 16,
+        "padding_bottom": 16
+      }
+    },
+    "header": {
+      "type": "header",
+      "settings": {
+        "logo_position": "top-center",
+        "menu": "main-menu",
+        "search_style": "icon",
+        "show_category_row": true,
+        "category_menu": "main-menu",
+        "menu_type_desktop": "drawer",
+        "sticky_header_type": "always",
+        "show_line_separator": false,
+        "color_scheme": "scheme-4",
+        "menu_color_scheme": "scheme-4",
+        "enable_country_selector": false,
+        "enable_language_selector": false,
+        "enable_customer_avatar": false,
+        "mobile_logo_position": "center",
+        "margin_bottom": 0,
+        "padding_top": 0,
+        "padding_bottom": 0
+      }
+    }
+  },
+  "order": [
+    "offer_annoucement_4tnBfB",
+    "offer_timebar_4WVn7P",
+    "blocky_lys_scrolling_text_bar_GLkKNr",
+    "header"
+  ]
+}

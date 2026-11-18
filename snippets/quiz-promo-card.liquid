@@ -1,0 +1,25 @@
+{% comment %}
+  Quiz promo tile inside the collection grid (block quiz_promo_card of main-collection-product-grid).
+  375: full width, 335x184. From 990: spans 2 columns, follows the row height. Image + 0.55 black overlay,
+  content bottom-left with a 20px inset: pm-title in white and a white pm-btn--link.
+  Styles: assets/pm-collection.css (.pm-promo-tile*). Stays disabled in collection.json until the quiz is live.
+{% endcomment %}
+<li
+  {{ block.shopify_attributes }}
+  class="grid__item pm-promo-tile{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+  {% if settings.animations_reveal_on_scroll %}
+  data-cascade
+  style="--animation-order: {{ product_position }};"
+  {% endif %}>
+  <a href="{{ block.settings.url }}" class="pm-promo-tile__link">
+    {%- if block.settings.image != blank -%}
+      {{ block.settings.image | image_url: width: 1320 | image_tag: class: 'pm-promo-tile__img', loading: 'lazy', widths: '400, 600, 800, 1200', sizes: '(min-width: 990px) 50vw, 100vw', alt: block.settings.heading }}
+    {%- endif -%}
+    <div class="pm-promo-tile__content">
+      <h3 class="pm-promo-tile__title pm-title">{{ block.settings.heading }}</h3>
+      {%- if block.settings.button_text != blank -%}
+        <span class="pm-btn pm-btn--link pm-promo-tile__cta">{{ block.settings.button_text }}</span>
+      {%- endif -%}
+    </div>
+  </a>
+</li>

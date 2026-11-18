@@ -1,0 +1,308 @@
+{% liquid
+  assign product_form_id = 'product-form-' | append: section.id
+
+  assign selected_variant = product.selected_or_first_available_variant
+
+  for variant in product.variants
+    assign variant_title_down = variant.title | downcase
+
+    if variant_title_down contains '50'
+      assign selected_variant = variant
+      break
+    endif
+  endfor
+
+  comment
+    Size + strength products (Pojemność + Zaperfumowanie, 17.11.2026): start on the first AVAILABLE 50 ml
+    version (variant order puts 20% first), else the first available version.
+  endcomment
+  assign has_option_rows = false
+  if product.options.size > 1
+    assign has_option_rows = true
+    assign selected_variant = blank
+    for variant in product.variants
+      assign variant_title_down = variant.title | downcase
+      if variant_title_down contains '50' and variant.available
+        assign selected_variant = variant
+        break
+      endif
+    endfor
+    if selected_variant == blank
+      assign selected_variant = product.selected_or_first_available_variant
+    endif
+  endif
+%}
+
+{% comment %} Hide Rapi bundle for default template {% endcomment %}
+<style>
+  .rapi-bundle-content-0,
+  .rapi-bundle-boosters-afteratc-0 {
+    display: none !important;
+  }
+</style>
+
+{% if product.available == false %}
+  {% render 'sold-out-alternative', product: product %}
+{% elsif has_option_rows %}
+  {% comment %}
+    One row per option ("Wybierz pojemność" 50ml / 100ml, "Wybierz zaperfumowanie" 20% / 24%), same buttons as the
+    size-only picker below. A click picks one value; the script resolves it to an in-stock version. A value with no
+    version in stock is greyed out and can't be picked.
+  {% endcomment %}
+  {%- assign sold_out_label = 'products.product.sold_out' | t -%}
+  <div id="variant-selector">
+    {% for option in product.options_with_values %}
+      {% liquid
+        assign option_index = forloop.index0
+        assign option_name_down = option.name | downcase
+        assign option_kind = 'other'
+        assign option_heading = option.name
+        if option_name_down contains 'pojemno' or option_name_down contains 'size' or option_name_down contains 'rozmiar'
+          assign option_kind = 'size'
+          assign option_heading = 'premium.pdp.choose_size' | t
+        elsif option_name_down contains 'zaperfum'
+          assign option_heading = 'premium.pdp.choose_strength' | t
+        endif
+      %}
+      <div class="flex justify-between items-center mb-3 {% if forloop.first %}!mt-6{% else %}!mt-5{% endif %}">
+        <h2 class="m-0 text-sm md:text-base font-semibold">{{ option_heading }}:</h2>
+      </div>
+
+      <div class="flex gap-3">
+        {% for value in option.values %}
+          {% liquid
+            assign value_available = false
+            for variant in product.variants
+              if variant.options[option_index] == value and variant.available
+                assign value_available = true
+                break
+              endif
+            endfor
+            assign value_selected = false
+            if selected_variant.options[option_index] == value
+              assign value_selected = true
+            endif
+          %}
+          <button
+            type="button"
+            class="option-button flex-grow flex justify-center gap-2 rounded-lg px-2 pt-4 pb-3 bg-white border-2 border-solid font-['Plus_Jakarta_Sans'] relative {% if value_selected %}border-black{% else %}mgx-border{% endif %}{% if value_available %} cursor-pointer{% else %} opacity-50 line-through cursor-not-allowed{% endif %}"
+            data-option-index="{{ option_index }}"
+            data-value="{{ value | escape }}"
+            aria-pressed="{{ value_selected }}"
+            {% unless value_available %}aria-disabled="true" title="{{ sold_out_label | escape }}"{% endunless %}>
+            <div class="text-center">
+              <div class="text-base font-semibold">{{ value }}</div>
+            </div>
+            {% if option_kind == 'size' and value contains '100' %}
+              <span class="text-xs italic text-white rounded absolute -top-2.5 left-1/2 [transform:translateX(-50%)] mgx-badge-amber px-2 py-0.5">Bestseller</span>
+            {% endif %}
+          </button>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+{% elsif product.variants.size > 1 %}
+  {% comment %} Variant Selector {% endcomment %}
+  <div class="flex justify-between items-center mb-3 !mt-6">
+    <h2 class="m-0 text-sm md:text-base font-semibold">Wybierz pojemność:</h2>
+  </div>
+
+  <div class="flex gap-3" id="variant-selector">
+    {% for variant in product.variants %}
+      <button
+        type="button"
+        class="variant-button flex-grow flex justify-center gap-2 rounded-lg px-2 pt-4 pb-3 bg-white border-2 border-solid cursor-pointer font-['Plus_Jakarta_Sans'] relative {% if variant.id == selected_variant.id %}border-black{% else %}mgx-border{% endif %}"
+        data-variant-id="{{ variant.id }}"
+        data-variant-title="{{ variant.title }}"
+        data-original-price="{{ variant.price | money }}"
+        data-compare-price="{{ variant.compare_at_price | money }}">
+        <div class="text-center">
+          <div class="text-base font-semibold">{{ variant.title }}</div>
+        </div>
+        {% if variant.title contains '100' %}
+          <span class="text-xs italic text-white rounded absolute -top-2.5 left-1/2 [transform:translateX(-50%)] mgx-badge-amber px-2 py-0.5">Bestseller</span>
+        {% endif %}
+      </button>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if product.available %}
+{% comment %} Add to cart form {% endcomment %}
+<product-form
+  id="atc_scroll_target"
+  class="product-form !m-0"
+  data-hide-errors="{{ gift_card_recipient_feature_active }}"
+  data-section-id="{{ section.id }}">
+  {%- form 'product'
+    , product
+    , id: product_form_id
+    , class: 'form'
+    , novalidate: 'novalidate'
+    , data-type: 'add-to-cart-form'
+  -%}
+    <input
+      type="hidden"
+      name="id"
+      id="product-variant-id"
+      value="{{ selected_variant.id }}"
+      class="product-variant-id">
+    <button
+      type="submit"
+      name="add"
+      value="1"
+      class="atc-button shimmer-btn cta_product_from_submit_btn flex gap-x-2 flex-wrap items-center !mb-0 text-2xl !p-3 rounded-lg button mgx-btn-primary transition-colors shadow-xl tracking-normal button--full-width button--primary"
+      aria-label="Add to cart"
+      {% if product.metafields.custom.choose_your_fragrances_options != blank %}
+      disabled="disabled"
+      {% endif %}>
+      <span>{{ 'products.product.add_to_cart' | t }}</span>
+      <div class="flex items-center">
+        <div
+          class="inline-block text-lg mgx-price-pill px-3 rounded"
+          id="product-price"
+          role="status"
+          {{ block.shopify_attributes }}>
+          {% if selected_variant.compare_at_price > selected_variant.price %}
+            <span class="compare-price line-through text-white/50 text-base">{{ selected_variant.compare_at_price | money }}</span>
+          {% endif %}
+          <span class="current-price">{{ selected_variant.price | money }}</span>
+        </div>
+      </div>
+      {%- render 'loading-spinner' -%}
+    </button>
+  {%- endform -%}
+</product-form>
+{% endif %}
+
+<script>
+  (function() {
+    // Variant data object
+    const variantsData = {
+      {% for variant in product.variants %}
+        "{{ variant.id }}": {
+          title: "{{ variant.title }}",
+          options: {{ variant.options | json }},
+          available: {{ variant.available }},
+          originalPrice: "{{ variant.price | money }}",
+          compareAtPrice: "{{ variant.compare_at_price | money }}",
+          hasComparePrice: {% if variant.compare_at_price > variant.price %}true{% else %}false{% endif %}
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    };
+
+    // State
+    let selectedVariantId = "{{ selected_variant.id }}";
+
+    // DOM elements
+    const variantButtons = document.querySelectorAll('.variant-button');
+    const optionButtons = document.querySelectorAll('#variant-selector .option-button');
+    const variantIdInput = document.getElementById('product-variant-id');
+    const priceContainer = document.getElementById('product-price');
+    const comparePriceSpan = priceContainer?.querySelector('.compare-price');
+    const currentPriceSpan = priceContainer?.querySelector('.current-price');
+
+    // Update variant selection
+    function updateVariant(variantId) {
+      selectedVariantId = variantId;
+      const variantData = variantsData[variantId];
+
+      // Update hidden input
+      variantIdInput.value = variantId;
+
+      // Update button styles
+      variantButtons.forEach(button => {
+        if (button.dataset.variantId === variantId) {
+          button.classList.add('border-black');
+          button.classList.remove('mgx-border');
+        } else {
+          button.classList.remove('border-black');
+          button.classList.add('mgx-border');
+        }
+      });
+
+      // Size + strength rows: a button is chosen when the selected version carries its value
+      optionButtons.forEach(button => {
+        const chosen = (variantData.options || [])[Number(button.dataset.optionIndex)] === button.dataset.value;
+        button.classList.toggle('border-black', chosen);
+        button.classList.toggle('mgx-border', !chosen);
+        button.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+      });
+
+      // Update price display
+      if (variantData.hasComparePrice) {
+        if (!priceContainer.querySelector('.compare-price')) {
+          const newCompareSpan = document.createElement('span');
+          newCompareSpan.className = 'compare-price line-through text-white/50 text-base';
+          priceContainer.insertBefore(newCompareSpan, currentPriceSpan);
+        }
+        const compareSpan = priceContainer.querySelector('.compare-price');
+        compareSpan.innerHTML = variantData.compareAtPrice;
+        compareSpan.style.display = '';
+      } else {
+        const compareSpan = priceContainer.querySelector('.compare-price');
+        if (compareSpan) {
+          compareSpan.style.display = 'none';
+        }
+      }
+
+      currentPriceSpan.innerHTML = variantData.originalPrice;
+
+      // Update floating ATC price
+      const floatingAtcPrice = document.querySelector('#floatingAtc .current-price');
+      if (floatingAtcPrice) {
+        floatingAtcPrice.innerHTML = variantData.originalPrice;
+      }
+    }
+
+    // Add click event listeners to variant buttons
+    variantButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const variantId = this.dataset.variantId;
+        updateVariant(variantId);
+      });
+    });
+
+    // Option click: the in-stock version with this value and the other option as it is now; when that one is
+    // sold out, the first in-stock version with this value (the other option follows). Sold-out values do nothing.
+    optionButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const index = Number(this.dataset.optionIndex);
+        const value = this.dataset.value;
+        const wanted = ((variantsData[selectedVariantId] || {}).options || []).slice();
+        wanted[index] = value;
+        const ids = Object.keys(variantsData);
+        const match = ids.find(id => variantsData[id].available && variantsData[id].options.every((o, i) => o === wanted[i]))
+          || ids.find(id => variantsData[id].available && variantsData[id].options[index] === value);
+        if (match) updateVariant(match);
+      });
+    });
+
+    const shippingLocation = document.querySelector('.shipping_location');
+    if (shippingLocation) {
+    fetch('https://ipapi.co/country_name/')
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then((countryName) => {
+        shippingLocation.textContent = countryName.trim();
+      })
+      .catch(() => {
+        // Leave existing text in place if lookup fails
+      });
+    }
+  })();
+</script>
+
+<div>
+  <img
+    class="max-w-[400px] mx-auto mt-8 block"
+    src="{{ 'payment-badge.svg' | asset_url }}"
+    alt="Payment methods"
+    width="100%"
+    height="auto"
+    loading="lazy">
+</div>
+
+{% render 'shipping-badges' %}

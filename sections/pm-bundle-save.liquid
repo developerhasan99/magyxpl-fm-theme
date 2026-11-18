@@ -1,0 +1,2214 @@
+{%- comment -%}
+  pm-bundle-save: "Bundle & Save" buy box (gallery left, box right from 990px, stacked below).
+  Prices come from the bundle product's variants ("1 flakon" ... "5 flakonów" or "1 Bottle" ... "5 Bottles",
+  mapped by the leading number), scent rows from the collection setting. Picks live in the Alpine component
+  `pmBundleSave` below. tryscent.eu: calm monochrome version of the FM page (no red, no forced countdown).
+  Cart: mode bundle_product = one line (bundle variant for k bottles + "Flakon n" properties + _bundle_items),
+  mode per_line = one line per scent (prices then need an automatic discount in admin).
+  Bundle product: picker setting, else the handle setting, else the page's own product when this template is
+  assigned to it. Missing product = notice in the theme editor only, nothing for customers.
+{%- endcomment -%}
+{%- liquid
+  assign st = section.settings
+
+  assign pm_bp = st.bundle_product
+  if pm_bp == blank and st.bundle_handle != blank
+    assign pm_bp_handle = st.bundle_handle | strip
+    assign pm_bp = all_products[pm_bp_handle]
+  endif
+  if pm_bp == blank and product != blank and product.template_suffix == 'bundle-save'
+    assign pm_bp = product
+  endif
+
+  assign pm_coll = st.collection
+  if pm_coll == blank
+    assign pm_coll = collections['bestseller-singles']
+  endif
+  if pm_coll == blank
+    assign pm_coll = collections.all
+  endif
+
+  assign pm_size = st.bottle_size | strip | downcase | remove: ' '
+
+  assign pm_single_cents = st.single_price | default: '0' | times: 100 | round
+  # Per-bottle "was" price from the 1-bottle variant's compare-at (converted by Markets); the setting is only a fallback
+  for v in pm_bp.variants
+    assign vn = v.option1 | default: v.title | split: ' ' | first | plus: 0
+    if vn == 1 and v.compare_at_price > v.price
+      assign pm_single_cents = v.compare_at_price
+      break
+    endif
+  endfor
+
+  # Variant map: leading number of option1 ("3 Bottles" -> 3) -> id / price / compare-at
+  assign pm_vmax = 0
+  assign pm_sep = ''
+  capture pm_variants_json
+    for v in pm_bp.variants
+      assign vn = v.option1 | default: v.title | split: ' ' | first | plus: 0
+      if vn < 1
+        continue
+      endif
+      if vn > pm_vmax
+        assign pm_vmax = vn
+      endif
+      assign v_compare = vn | times: pm_single_cents
+      if v.compare_at_price > v.price
+        assign v_compare = v.compare_at_price
+      endif
+      echo pm_sep
+      echo '"' | append: vn | append: '":{"id":' | append: v.id | append: ',"price":' | append: v.price | append: ',"compare":' | append: v_compare | append: ',"available":' | append: v.available | append: '}'
+      assign pm_sep = ','
+    endfor
+  endcapture
+
+  # Tiers (block order), preselected index, overall cap
+  assign pm_tier_start = -1
+  assign pm_tier_count = 0
+  assign pm_cap_max = 0
+  assign pm_best_pct = 0
+  assign pm_sep = ''
+  capture pm_tiers_json
+    for block in section.blocks
+      if block.type != 'tier'
+        continue
+      endif
+      assign t_bottles = block.settings.bottles | plus: 0
+      assign t_cap = block.settings.max_bottles | plus: 0
+      if t_cap < t_bottles
+        assign t_cap = t_bottles
+      endif
+      if pm_vmax > 0 and t_cap > pm_vmax
+        assign t_cap = pm_vmax
+      endif
+      if t_cap > pm_cap_max
+        assign pm_cap_max = t_cap
+      endif
+      if block.settings.preselected and pm_tier_start == -1
+        assign pm_tier_start = pm_tier_count
+      endif
+      echo pm_sep
+      echo '{"bottles":' | append: t_bottles | append: ',"cap":' | append: t_cap | append: '}'
+      assign pm_sep = ','
+      assign pm_tier_count = pm_tier_count | plus: 1
+    endfor
+  endcapture
+  if pm_tier_start == -1
+    assign pm_tier_start = 0
+  endif
+  assign pm_max_total = pm_cap_max
+  if pm_vmax > 0 and pm_max_total > pm_vmax
+    assign pm_max_total = pm_vmax
+  endif
+
+  # Best saving over all variants, for the [max] token in the timer eyebrow
+  for v in pm_bp.variants
+    assign vn = v.option1 | default: v.title | split: ' ' | first | plus: 0
+    if vn < 1
+      continue
+    endif
+    assign v_compare = vn | times: pm_single_cents
+    if v.compare_at_price > v.price
+      assign v_compare = v.compare_at_price
+    endif
+    if v_compare > v.price
+      assign v_pct = v_compare | minus: v.price | times: 100.0 | divided_by: v_compare | round
+      if v_pct > pm_best_pct
+        assign pm_best_pct = v_pct
+      endif
+    endif
+  endfor
+
+  # Start values for server-rendered text (the component takes over after init)
+  assign pm_start_target = 0
+  assign pm_i = 0
+  for block in section.blocks
+    if block.type != 'tier'
+      continue
+    endif
+    if pm_i == pm_tier_start
+      assign pm_start_target = block.settings.bottles | plus: 0
+    endif
+    assign pm_i = pm_i | plus: 1
+  endfor
+
+  # Store-wide rating from the theme review data (snippets/pm-review-stats; the rating line stays hidden without reviews)
+  capture pm_jm_rating
+    render 'pm-review-stats', mode: 'store_avg'
+  endcapture
+  capture pm_jm_count
+    render 'pm-review-stats', mode: 'store_count'
+  endcapture
+  assign pm_jm_rating = pm_jm_rating | strip | plus: 0
+  assign pm_jm_count = pm_jm_count | strip | plus: 0
+-%}
+
+{%- comment -%}
+  Gender groups (filter cards + label on each row), read from the store tags:
+  unisex tag, or both women and men tags = unisex; Für Frauen / fuer-frauen / FÜR FRAUEN / Frauen / dla-kobiet /
+  Dla kobiet / Kobiety = women; Für Männer / fuer-maenner / FÜR MÄNNER / dla-mezczyzn / Mężczyźni = men.
+  Untagged scents get no group: they show under "all" only (no guessed label). Labels come from the filter blocks.
+{%- endcomment -%}
+{%- liquid
+  assign pm_group_map = '#'
+  for block in section.blocks
+    if block.type == 'line'
+      assign pm_group_map = pm_group_map | append: block.settings.group | append: '=|' | append: block.settings.label | append: '#'
+    endif
+  endfor
+-%}
+{%- assign pm_line_list = '' -%}
+{%- assign pm_row_count = 0 -%}
+{%- capture pm_rows -%}
+  {%- paginate pm_coll.products by 250 -%}
+    {%- for p in pm_coll.products -%}
+      {%- liquid
+        assign skip = false
+        comment
+          Single-size products (mystery box, gift sets) are not scents for a bundle: every scent here has size variants
+        endcomment
+        if p.available == false or p.id == pm_bp.id or p.tags contains 'bundle' or p.has_only_default_variant
+          assign skip = true
+        endif
+        assign v = blank
+        unless skip
+          if pm_size != blank
+            for pv in p.variants
+              assign pv_size = pv.title | downcase | remove: ' '
+              assign pv_head = pv_size | slice: 0, pm_size.size
+              if pv.available and pv_head == pm_size
+                assign v = pv
+                break
+              endif
+            endfor
+          else
+            assign v = p.selected_or_first_available_variant
+          endif
+          if v == blank or v.available == false
+            assign skip = true
+          endif
+        endunless
+      -%}
+      {%- unless skip -%}
+        {%- liquid
+          assign p_w = false
+          if p.tags contains 'Für Frauen' or p.tags contains 'fuer-frauen' or p.tags contains 'FÜR FRAUEN' or p.tags contains 'Frauen' or p.tags contains 'dla-kobiet' or p.tags contains 'Dla kobiet' or p.tags contains 'Kobiety'
+            assign p_w = true
+          endif
+          assign p_m = false
+          if p.tags contains 'Für Männer' or p.tags contains 'fuer-maenner' or p.tags contains 'FÜR MÄNNER' or p.tags contains 'dla-mezczyzn' or p.tags contains 'Mężczyźni'
+            assign p_m = true
+          endif
+          assign p_line = ''
+          if p.tags contains 'unisex' or p.tags contains 'Unisex' or p.tags contains 'UNISEX'
+            assign p_line = 'unisex'
+          elsif p_w and p_m
+            assign p_line = 'unisex'
+          elsif p_w
+            assign p_line = 'women'
+          elsif p_m
+            assign p_line = 'men'
+          endif
+          assign pm_line_list = pm_line_list | append: '#' | append: p_line | append: '#'
+          assign pm_row_count = pm_row_count | plus: 1
+
+          assign p_gender = ''
+          if p_line != blank
+            assign g_token = '#' | append: p_line | append: '=|'
+            if pm_group_map contains g_token
+              assign p_gender = pm_group_map | split: g_token | last | split: '#' | first | strip
+            endif
+          endif
+
+          assign p_badge = ''
+          for t in p.tags
+            assign t_low = t | downcase
+            assign t_head6 = t_low | slice: 0, 6
+            if t_head6 == 'badge:'
+              assign p_badge = t | slice: 6, 60 | strip
+              break
+            endif
+          endfor
+
+          # Designer twin: custom.inspired_by -> inspiration metaobject (name), as on the rest of the theme
+          assign p_insp = p.metafields.custom.inspired_by.value.name | default: '' | strip
+
+          # Designer price (custom.original_retail_price, money): referenced directly it is cents in the
+          # shopper's currency; 0 = no value, and then the summary hides the designer line
+          assign p_dcents = 0
+          if p.metafields.custom.original_retail_price != blank
+            assign p_dcents = p.metafields.custom.original_retail_price.value | append: '' | plus: 0
+          endif
+
+          # occasion is a single-line text field here; a comma list still splits into chips
+          assign p_occasions = p.metafields.custom.occasion.value | append: '' | split: ','
+        -%}
+        {%- capture p_title -%}{%- render 'polish-store-text', text: p.title -%}{%- endcapture -%}
+        {%- liquid
+          assign p_title = p_title | strip
+          # Unescaped copy for filters that escape on their own (t interpolation, image_tag alt)
+          assign p_title_raw = p_title | replace: '&#39;', "'" | replace: '&quot;', '"' | replace: '&lt;', '<' | replace: '&gt;', '>' | replace: '&amp;', '&'
+          # Search index (brand / perfume / occasion): title, inspiration name, nuta (brand), occasion and tags
+          # (brands mostly live in tags). Lowercased here; accents are folded in JS.
+          assign p_tags_txt = p.tags | join: ' '
+          assign p_search = p_title_raw | append: ' ' | append: p_insp | append: ' ' | append: p.metafields.custom.inspired_by_name.value | append: ' ' | append: p.metafields.custom.nuta.value | append: ' ' | append: p.metafields.custom.occasion.value | append: ' ' | append: p.metafields.custom.searchaniser.value | append: ' ' | append: p_tags_txt | downcase
+        -%}
+        <div
+          class="pm-bs-row"
+          role="listitem"
+          data-pm-bs-row
+          data-vid="{{ v.id }}"
+          data-title="{{ p_title }}"
+          data-line="{{ p_line | escape }}"
+          data-designer="{{ p_dcents }}"
+          data-search="{{ p_search | escape }}"
+          x-show="lineOk({{ p_line | json | escape }}) && searchOk('{{ v.id }}')"
+          :class="{ 'is-picked': qty({{ v.id }}) > 0 }"
+        >
+          <div class="pm-bs-row__side">
+            <div class="pm-bs-row__media">
+              {%- if p.featured_image != blank -%}
+                {{ p.featured_image | image_url: width: 280 | image_tag: width: 140, height: 140, widths: '140, 280', sizes: '72px', loading: 'lazy', alt: p_title_raw, class: 'pm-bs-row__img' }}
+              {%- else -%}
+                {{ 'product-1' | placeholder_svg_tag: 'pm-bs-row__img' }}
+              {%- endif -%}
+            </div>
+            {%- if p_gender != blank -%}
+              <span class="pm-bs-row__for">{{ p_gender | escape }}</span>
+            {%- endif -%}
+          </div>
+          <div class="pm-bs-row__body">
+            <p class="pm-bs-row__title">{{ p_title }}</p>
+            {%- if p_insp != blank -%}
+              <p class="pm-bs-row__insp pm-dmeta">
+                {%- render 'pm-designer-thumb', product: p -%}
+                <span class="pm-dmeta__text">{{ st.inspired_prefix | escape }} <strong>{{ p_insp | escape }}</strong></span>
+              </p>
+            {%- endif -%}
+            {%- if p_occasions.size > 0 -%}
+              <ul class="pm-bs-row__tags" role="list">
+                {%- for o in p_occasions -%}
+                  {%- assign o_text = o | strip -%}
+                  {%- if o_text != blank -%}<li class="pm-bs-row__tag">{{ o_text | escape }}</li>{%- endif -%}
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}
+          </div>
+          <div class="pm-bs-row__actions">
+            {%- if p_badge != blank -%}
+              <span class="pm-bs-row__badge">{{ p_badge | escape }}</span>
+            {%- endif -%}
+            <button
+              type="button"
+              class="pm-btn pm-btn--primary pm-btn--mini pm-bs-add"
+              x-show="qty({{ v.id }}) === 0"
+              :disabled="atMax"
+              @click="add({{ v.id }})"
+              aria-label="{{ 'premium.pdp.add_product' | t: name: p_title_raw }}"
+            >
+              {{ st.add_label | escape }}
+            </button>
+            <div class="pm-bs-step" x-show="qty({{ v.id }}) > 0" x-cloak>
+              <button type="button" class="pm-bs-step__btn" @click="remove({{ v.id }})" aria-label="{{ 'premium.pdp.remove_product' | t: name: p_title_raw }}">
+                {%- render 'pm-icon', icon: 'minus', size: 14, stroke: 2 -%}
+              </button>
+              <span class="pm-bs-step__qty" x-text="qty({{ v.id }})">0</span>
+              <button type="button" class="pm-bs-step__btn" @click="add({{ v.id }})" :disabled="atMax" aria-label="{{ 'premium.pdp.add_product' | t: name: p_title_raw }}">
+                {%- render 'pm-icon', icon: 'plus', size: 14, stroke: 2 -%}
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endunless -%}
+    {%- endfor -%}
+  {%- endpaginate -%}
+{%- endcapture -%}
+
+{%- liquid
+  # Gender filter cards: config + per-group row counts
+  assign pm_line_start = -1
+  assign pm_line_idx = 0
+  assign pm_sep = ''
+  capture pm_lines_json
+    for block in section.blocks
+      if block.type != 'line'
+        continue
+      endif
+      assign l_tag = block.settings.group
+      assign l_token = '#' | append: l_tag | append: '#'
+      assign l_rest = pm_line_list | remove: l_token
+      assign l_count = pm_line_list.size | minus: l_rest.size | divided_by: l_token.size
+      if block.settings.preselected and pm_line_start == -1
+        assign pm_line_start = pm_line_idx
+      endif
+      assign l_tag_json = l_tag | json
+      echo pm_sep
+      echo '{"tag":' | append: l_tag_json | append: ',"count":' | append: l_count | append: '}'
+      assign pm_sep = ','
+      assign pm_line_idx = pm_line_idx | plus: 1
+    endfor
+  endcapture
+-%}
+
+{{ 'pm-s-bundle-save.css' | asset_url | stylesheet_tag }}
+
+{%- if pm_bp == blank -%}
+  {%- if request.design_mode -%}
+    <div class="pm-bs pm-bs--missing color-{{ st.color_scheme }} gradient">
+      <div class="pm-container">
+        <p class="pm-bs-notice">
+          Brak produktu zestawu. Wybierz go w ustawieniach sekcji albo utwórz produkt o uchwycie „{{ st.bundle_handle | default: 'zestaw-perfum' | escape }}” z wariantami „1 flakon”, „2 flakony” i tak dalej. Klienci nie widzą tej sekcji, dopóki produktu nie ma.
+        </p>
+      </div>
+    </div>
+  {%- endif -%}
+{%- else -%}
+{%- liquid
+  # Spend goals bar (FM's cart goals look), only for the markets in goals_markets: the Kite thresholds exist there only.
+  # Amounts are in that market's currency; the bar follows the price the CTA shows (bundle variant for the picks).
+  assign pm_goals_on = false
+  assign pm_goals_n = 0
+  assign pm_g_markets = st.goals_markets | downcase | remove: ' ' | split: ','
+  if st.show_goals and pm_g_markets contains localization.market.handle
+    if st.goal_1_amount > 0
+      assign pm_goals_n = pm_goals_n | plus: 1
+    endif
+    if st.goal_2_amount > 0
+      assign pm_goals_n = pm_goals_n | plus: 1
+    endif
+    if pm_goals_n > 0
+      assign pm_goals_on = true
+    endif
+  endif
+-%}
+<section
+  id="PmBundleSave-{{ section.id }}"
+  class="pm-bs color-{{ st.color_scheme }} gradient"
+  x-data="pmBundleSave"
+  data-section-id="{{ section.id }}"
+>
+  <script type="application/json" data-pm-bs-config>
+    {
+      "tiers": [{{ pm_tiers_json }}],
+      "tierStart": {{ pm_tier_start }},
+      "lines": [{{ pm_lines_json }}],
+      "lineStart": {{ pm_line_start }},
+      "rowCount": {{ pm_row_count }},
+      "variants": { {{ pm_variants_json }} },
+      "maxTotal": {{ pm_max_total }},
+      "mode": {{ st.pricing_mode | json }},
+      "timerOn": {{ st.show_timer }},
+      "timerHours": {{ st.timer_hours | default: 24 }},
+      "reviewMs": {{ st.review_interval | default: 5 | times: 1000 }},
+      "goals": [
+        {%- if pm_goals_on -%}
+          {%- assign pm_sep = '' -%}
+          {%- for gi in (1..2) -%}
+            {%- liquid
+              assign k_amount = 'goal_' | append: gi | append: '_amount'
+              assign k_unlock = 'goal_' | append: gi | append: '_unlock'
+              assign g_cents = st[k_amount] | times: 100
+            -%}
+            {%- if g_cents > 0 -%}
+              {{ pm_sep }}{ "cents": {{ g_cents }}, "unlock": {{ st[k_unlock] | json }} }
+              {%- assign pm_sep = ',' -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+      ],
+      "text": {
+        "scentsHeading": {{ st.scents_heading | json }},
+        "counter": {{ st.counter_text | json }},
+        "remaining": {{ st.remaining_text | json }},
+        "max": {{ st.max_text | json }},
+        "linePicked": {{ st.line_picked_text | json }},
+        "ctaEmpty": {{ st.cta_empty | json }},
+        "cta": {{ st.cta_label | json }},
+        "adding": {{ st.cta_adding | json }},
+        "sumRegular": {{ st.sum_regular_label | json }},
+        "error": {{ st.error_text | json }},
+        "bottle": {{ st.bottle_property | json }},
+        "goalsNext": {{ st.goals_msg_next | json }},
+        "goalsDone": {{ st.goals_msg_done | json }}
+      }
+    }
+  </script>
+
+  <div class="pm-container pm-bs__grid">
+    {%- comment -%} 1. Gallery: the bundle product's media, scroll-snap track + thumbnails {%- endcomment -%}
+    <div class="pm-bs__media">
+      <div class="pm-bs-gallery">
+        <div class="pm-bs-gallery__viewport">
+          <div class="pm-bs-gallery__track" x-ref="track" @scroll.passive="onTrack()">
+            {%- assign pm_media_count = 0 -%}
+            {%- for media in pm_bp.media -%}
+              {%- if media.preview_image == blank -%}{%- continue -%}{%- endif -%}
+              {%- assign pm_media_count = pm_media_count | plus: 1 -%}
+              {%- assign pm_alt = media.alt | default: pm_bp.title -%}
+              <div class="pm-bs-gallery__slide">
+                {%- if forloop.first -%}
+                  {{ media.preview_image | image_url: width: 1400 | image_tag: widths: '375, 550, 750, 1100, 1400', sizes: '(min-width: 990px) 50vw, 100vw', fetchpriority: 'high', loading: 'eager', alt: pm_alt, class: 'pm-bs-gallery__img' }}
+                {%- else -%}
+                  {{ media.preview_image | image_url: width: 1400 | image_tag: widths: '375, 550, 750, 1100, 1400', sizes: '(min-width: 990px) 50vw, 100vw', loading: 'lazy', alt: pm_alt, class: 'pm-bs-gallery__img' }}
+                {%- endif -%}
+              </div>
+            {%- endfor -%}
+            {%- if pm_media_count == 0 -%}
+              <div class="pm-bs-gallery__slide">{{ 'product-1' | placeholder_svg_tag: 'pm-bs-gallery__img' }}</div>
+            {%- endif -%}
+          </div>
+          {%- if pm_media_count > 1 -%}
+            <button type="button" class="pm-bs-gallery__arrow pm-bs-gallery__arrow--prev" @click="goTo(media - 1)" :disabled="media === 0" aria-label="{{ 'premium.general.previous' | t }}">
+              {%- render 'pm-icon', icon: 'chevron-right', size: 16 -%}
+            </button>
+            <button type="button" class="pm-bs-gallery__arrow pm-bs-gallery__arrow--next" @click="goTo(media + 1)" :disabled="media === {{ pm_media_count | minus: 1 }}" aria-label="{{ 'premium.general.next' | t }}">
+              {%- render 'pm-icon', icon: 'chevron-right', size: 16 -%}
+            </button>
+          {%- endif -%}
+        </div>
+        {%- if pm_media_count > 1 -%}
+          <div class="pm-bs-gallery__thumbs">
+            {%- assign pm_mi = 0 -%}
+            {%- for media in pm_bp.media -%}
+              {%- if media.preview_image == blank -%}{%- continue -%}{%- endif -%}
+              <button
+                type="button"
+                class="pm-bs-gallery__thumb{% if pm_mi == 0 %} is-active{% endif %}"
+                :class="{ 'is-active': media === {{ pm_mi }} }"
+                @click="goTo({{ pm_mi }})"
+                aria-label="{{ pm_bp.title | escape }} {{ pm_mi | plus: 1 }}"
+              >
+                {{ media.preview_image | image_url: width: 160 | image_tag: width: 80, height: 80, loading: 'lazy', alt: '' }}
+              </button>
+              {%- assign pm_mi = pm_mi | plus: 1 -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+
+    <div class="pm-bs__box" id="pm-bs-box">
+      {%- comment -%} 2. Rating, headline, subheading, benefits {%- endcomment -%}
+      <div class="pm-bs-intro">
+        {%- if st.show_rating and pm_jm_rating > 0 and pm_jm_count > 0 -%}
+          {%- liquid
+            assign pm_jm_rating_text = pm_jm_rating | round: 1 | append: '' | replace: '.', ','
+            if pm_jm_count >= 1000
+              assign pm_jm_k = pm_jm_count | divided_by: 1000
+              assign pm_jm_rest = pm_jm_count | modulo: 1000 | prepend: '00' | slice: -3, 3
+              assign pm_jm_count_text = pm_jm_k | append: '&nbsp;' | append: pm_jm_rest
+            else
+              assign pm_jm_count_text = pm_jm_count
+            endif
+            assign pm_jm_last = pm_jm_count | modulo: 10
+            assign pm_jm_last_two = pm_jm_count | modulo: 100
+            if pm_jm_count == 1
+              assign pm_jm_noun = 'opinia'
+            elsif pm_jm_last >= 2 and pm_jm_last <= 4 and pm_jm_last_two < 12
+              assign pm_jm_noun = 'opinie'
+            elsif pm_jm_last >= 2 and pm_jm_last <= 4 and pm_jm_last_two > 14
+              assign pm_jm_noun = 'opinie'
+            else
+              assign pm_jm_noun = 'opinii'
+            endif
+          -%}
+          {%- comment -%} No link set: stars and count scroll to the reviews section (pm-reviews root id="reviews") {%- endcomment -%}
+          {%- assign pm_rating_href = st.rating_link | default: '#reviews' -%}
+          <div class="pm-bs-rating">
+            <a class="pm-bs-rating__stars" href="{{ pm_rating_href }}" tabindex="-1" aria-hidden="true" @click="scrollToAnchor($event)">
+              {%- render 'pm-stars', rating: pm_jm_rating_text, size: 14 -%}
+            </a>
+            <span class="pm-bs-rating__label">{{ st.rating_label | escape }} {{ pm_jm_rating_text }}/5</span>
+            <span class="pm-bs-rating__sep" aria-hidden="true">|</span>
+            <a class="pm-bs-rating__link" href="{{ pm_rating_href }}" @click="scrollToAnchor($event)">{{ pm_jm_count_text }} {{ pm_jm_noun }}</a>
+          </div>
+        {%- endif -%}
+        {%- if st.headline != blank -%}
+          <h1 class="pm-bs-headline">{{ st.headline }}</h1>
+        {%- endif -%}
+        {%- if st.description != blank -%}
+          <div class="pm-bs-sub pm-bs-sub--rich">{{ st.description }}</div>
+        {%- elsif st.subheading != blank -%}
+          <p class="pm-bs-sub">{{ st.subheading }}</p>
+        {%- endif -%}
+        <ul class="pm-bs-benefits">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'benefit' and block.settings.text != blank -%}
+              <li class="pm-bs-benefits__item" {{ block.shopify_attributes }}>
+                {%- render 'pm-icon', icon: block.settings.icon, size: 20, stroke: 1.5, class: 'pm-bs-benefits__icon' -%}
+                <span>{{ block.settings.text | escape }}</span>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+
+      {%- comment -%} 3. Countdown: off by default on tryscent.eu (no forced urgency); only for a real, dated offer {%- endcomment -%}
+      {%- if st.show_timer -%}
+        <div class="pm-bs-timer" role="timer"{% if st.timer_label != blank %} aria-label="{{ st.timer_label | escape }}"{% endif %}>
+          <div class="pm-bs-timer__text">
+            {%- if st.timer_eyebrow != blank -%}
+              {%- liquid
+                comment
+                  The part before the first "·" is the lead phrase and renders in bold (ink, no sale colour)
+                endcomment
+                assign pm_eyebrow = st.timer_eyebrow | replace: '[max]', pm_best_pct | escape | split: '·'
+              -%}
+              <p class="pm-bs-timer__eyebrow">
+                {%- for seg in pm_eyebrow -%}
+                  {%- assign seg_text = seg | strip -%}
+                  {%- if forloop.first -%}
+                    <span class="pm-bs-timer__seg pm-bs-timer__sale">{{ seg_text }}</span>
+                  {%- else -%}
+                    {{ ' ' }}<span class="pm-bs-timer__seg">· {{ seg_text }}</span>
+                  {%- endif -%}
+                {%- endfor -%}
+              </p>
+            {%- endif -%}
+            <p class="pm-bs-timer__title">{{ st.timer_title | escape }}</p>
+          </div>
+          <div class="pm-bs-timer__clock" aria-live="off">
+            <div class="pm-bs-timer__unit">
+              <span class="pm-bs-timer__num" x-text="clock.h">{{ st.timer_hours | default: 24 | prepend: '0' | slice: -2, 2 }}</span>
+              <span class="pm-bs-timer__lbl">{{ st.timer_hrs_label | escape }}</span>
+            </div>
+            <div class="pm-bs-timer__unit">
+              <span class="pm-bs-timer__num" x-text="clock.m">00</span>
+              <span class="pm-bs-timer__lbl">{{ st.timer_mins_label | escape }}</span>
+            </div>
+            <div class="pm-bs-timer__unit">
+              <span class="pm-bs-timer__num" x-text="clock.s">00</span>
+              <span class="pm-bs-timer__lbl">{{ st.timer_secs_label | escape }}</span>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} 4. Tier cards {%- endcomment -%}
+      {%- if pm_tier_count > 0 -%}
+        <div class="pm-bs-group">
+          {%- if st.tiers_heading != blank -%}
+            <h2 class="pm-bs-h">{{ st.tiers_heading | escape }}</h2>
+          {%- endif -%}
+          <div class="pm-bs-tiers">
+            {%- assign ti = 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type != 'tier' -%}{%- continue -%}{%- endif -%}
+              {%- liquid
+                assign t_bottles = block.settings.bottles | plus: 0
+                assign t_max = block.settings.max_bottles | plus: 0
+                assign t_price = 0
+                assign t_max_price = 0
+                assign t_max_n = 0
+                assign t_compare = t_bottles | times: pm_single_cents
+                for v in pm_bp.variants
+                  assign vn = v.option1 | default: v.title | split: ' ' | first | plus: 0
+                  if vn == t_bottles
+                    assign t_price = v.price
+                    if v.compare_at_price > v.price
+                      assign t_compare = v.compare_at_price
+                    endif
+                  elsif vn > t_bottles and vn <= t_max and vn > t_max_n
+                    assign t_max_n = vn
+                    assign t_max_price = v.price
+                  endif
+                endfor
+                assign t_each = ''
+                if t_price > 0 and t_bottles > 0 and st.per_bottle_text != blank
+                  assign t_each_money = t_price | divided_by: t_bottles | money_without_trailing_zeros
+                  assign t_each = st.per_bottle_text | replace: '[price]', t_each_money
+                endif
+                assign t_stack = ''
+                if t_max_price > t_price and t_price > 0 and st.stack_text != blank
+                  assign t_extra_money = t_max_price | minus: t_price
+                  assign t_extra_n = t_max_n | minus: t_bottles
+                  assign t_extra_money = t_extra_money | divided_by: t_extra_n | money_without_trailing_zeros
+                  assign t_stack = st.stack_text | replace: '[price]', t_extra_money
+                endif
+                assign t_badge = block.settings.badge_override | strip
+                if t_badge == blank and t_price > 0 and t_compare > t_price and st.saving_badge != blank
+                  assign t_pct = t_compare | minus: t_price | times: 100.0 | divided_by: t_compare | round
+                  assign t_badge = st.saving_badge | replace: '[pct]', t_pct
+                endif
+                # Highlight badge on the card edge: own text, or the caption moved up (keeps its translations)
+                assign t_flag = block.settings.highlight | strip
+                assign t_tag = block.settings.tag
+                if t_flag == blank and block.settings.tag_as_badge
+                  assign t_flag = t_tag
+                  assign t_tag = ''
+                endif
+              -%}
+              <button
+                type="button"
+                class="pm-bs-tier{% if ti == pm_tier_start %} is-selected{% endif %}"
+                :class="{ 'is-selected': tierIndex === {{ ti }} }"
+                aria-pressed="{% if ti == pm_tier_start %}true{% else %}false{% endif %}"
+                :aria-pressed="tierIndex === {{ ti }} ? 'true' : 'false'"
+                @click="selectTier({{ ti }})"
+                {{ block.shopify_attributes }}
+              >
+                {%- comment -%}
+                  Vertical list (port of tryscent.co 08.11): every card shows label, saving badge, per bottle, price and
+                  compare-at; only the selected card opens the rest (caption, extra-bottle price).
+                {%- endcomment -%}
+                {%- if t_flag != blank -%}
+                  <div class="pm-bs-tier__flag">{{ t_flag | escape }}</div>
+                {%- endif -%}
+                <span class="pm-bs-tier__row">
+                  <span class="pm-bs-tier__check" aria-hidden="true">{%- render 'pm-icon', icon: 'check', size: 12, stroke: 2.5 -%}</span>
+                  <span class="pm-bs-tier__name">
+                    <div class="pm-bs-tier__label">{{ block.settings.label | escape }}</div>
+                    {%- if t_badge != blank -%}
+                      <div class="pm-bs-tier__badge">{{ t_badge | escape }}</div>
+                    {%- endif -%}
+                    {%- if t_each != blank -%}
+                      <div class="pm-bs-tier__each">{{ t_each | escape }}</div>
+                    {%- endif -%}
+                  </span>
+                  <span class="pm-bs-tier__prices">
+                    {%- if t_price > 0 -%}
+                      <span
+                        class="pm-bs-tier__price"
+                        {% if t_max_n > t_bottles %}x-text="liveTier({{ ti }}) ? money(liveTier({{ ti }}).price) : {{ t_price | money_without_trailing_zeros | json | escape }}"{% endif %}
+                      >{{ t_price | money_without_trailing_zeros }}</span>
+                    {%- endif -%}
+                    {%- if t_compare > t_price -%}
+                      <s
+                        class="pm-bs-tier__compare"
+                        {% if t_max_n > t_bottles %}x-text="liveTier({{ ti }}) ? money(liveTier({{ ti }}).compare) : {{ t_compare | money_without_trailing_zeros | json | escape }}"{% endif %}
+                      >{{ t_compare | money_without_trailing_zeros }}</s>
+                    {%- endif -%}
+                  </span>
+                </span>
+                <span class="pm-bs-tier__more">
+                  <span class="pm-bs-tier__more-in">
+                    {%- if t_tag != blank -%}
+                      <div class="pm-bs-tier__tag">{{ t_tag | escape }}</div>
+                    {%- endif -%}
+                    <span class="pm-bs-tier__chips">
+                      {%- if t_stack != blank -%}
+                        <div class="pm-bs-tier__stack">{{ t_stack | escape }}</div>
+                      {%- endif -%}
+                    </span>
+                  </span>
+                </span>
+              </button>
+              {%- assign ti = ti | plus: 1 -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} 5. Gender filter (FM's fragrance-line cards): Dla niej / Dla niego / Unisex {%- endcomment -%}
+      {%- if pm_line_idx > 0 -%}
+        <div class="pm-bs-group">
+          {%- if st.lines_heading != blank -%}
+            <h2 class="pm-bs-h">{{ st.lines_heading | escape }}</h2>
+          {%- endif -%}
+          <div class="pm-bs-lines" style="--pm-bs-lines: {{ pm_line_idx }};">
+            {%- assign li = 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type != 'line' -%}{%- continue -%}{%- endif -%}
+              {%- liquid
+                assign l_token = '#' | append: block.settings.group | append: '#'
+                assign l_rest = pm_line_list | remove: l_token
+                assign l_count = pm_line_list.size | minus: l_rest.size | divided_by: l_token.size
+              -%}
+              <button
+                type="button"
+                class="pm-bs-line{% if li == pm_line_start %} is-selected{% endif %}"
+                :class="{ 'is-selected': lineIndex === {{ li }} }"
+                aria-pressed="{% if li == pm_line_start %}true{% else %}false{% endif %}"
+                :aria-pressed="lineIndex === {{ li }} ? 'true' : 'false'"
+                @click="toggleLine({{ li }})"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.badge != blank -%}
+                  <span class="pm-bs-line__badge">{{ block.settings.badge | escape }}</span>
+                {%- endif -%}
+                <span class="pm-bs-line__label">{{ block.settings.label | escape }}</span>
+                {%- if block.settings.subtext != blank -%}
+                  <span class="pm-bs-line__sub">{{ block.settings.subtext | replace: '[count]', l_count | escape }}</span>
+                {%- endif -%}
+                <span class="pm-bs-line__picked" x-show="lineCount({{ li }}) > 0" x-text="linePickedText({{ li }})" x-cloak></span>
+              </button>
+              {%- assign li = li | plus: 1 -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} 6. Scent picker {%- endcomment -%}
+      <div class="pm-bs-group pm-bs-scents">
+        <div class="pm-bs-scents__head">
+          <h2 class="pm-bs-h" x-text="scentsHeading">{{ st.scents_heading | replace: '[n]', pm_start_target | escape }}</h2>
+          <span class="pm-bs-scents__count" aria-live="polite" x-text="counterText">{{ st.counter_text | replace: '[x]', '0' | replace: '[n]', pm_start_target | escape }}</span>
+        </div>
+        {%- if pm_goals_on -%}
+          {%- comment -%} Spend goals (FM's goals bar): free shipping, then the free gift, on the bundle price being built {%- endcomment -%}
+          <div class="pm-bs-goals" style="--pm-bs-goals-n: {{ pm_goals_n }};">
+            <p class="pm-bs-goals__msg" role="status" x-html="goalsMsg">
+              {%- liquid
+                assign g1_money = st.goal_1_amount | times: 100 | money_without_trailing_zeros
+                assign g1_unlock = st.goal_1_unlock
+                if st.goal_1_amount <= 0
+                  assign g1_money = st.goal_2_amount | times: 100 | money_without_trailing_zeros
+                  assign g1_unlock = st.goal_2_unlock
+                endif
+                assign g_next = st.goals_msg_next | escape | replace: '[amount]', '<strong>[amount]</strong>' | replace: '[goal]', '<strong>[goal]</strong>'
+              -%}
+              {{ g_next | replace: '[amount]', g1_money | replace: '[goal]', g1_unlock }}
+            </p>
+            <div class="pm-bs-goals__bar">
+              <span class="pm-bs-goals__track" aria-hidden="true"><span class="pm-bs-goals__fill" :style="{ width: goalsFill + '%' }"></span></span>
+              <ol class="pm-bs-goals__steps" role="list">
+                {%- for gi in (1..2) -%}
+                  {%- liquid
+                    assign k_amount = 'goal_' | append: gi | append: '_amount'
+                    assign k_title = 'goal_' | append: gi | append: '_title'
+                    assign k_icon = 'goal_' | append: gi | append: '_icon'
+                    assign g_cents = st[k_amount] | times: 100
+                  -%}
+                  {%- if g_cents > 0 -%}
+                    <li class="pm-bs-goals__step" :class="{ 'is-reached': goalsTotal >= {{ g_cents }} }">
+                      <span class="pm-bs-goals__dot" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" x-show="goalsTotal < {{ g_cents }}">
+                          {%- if st[k_icon] == 'shipping' -%}
+                            <path d="M2 6h12v10H2zM14 10h4l3 3v3h-7zM6.5 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm11 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                          {%- else -%}
+                            <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3.5-5-1.5S9.5 7 12 7zm0 0c1.5-3 5-3.5 5-1.5S14.5 7 12 7z"/>
+                          {%- endif -%}
+                        </svg>
+                        <svg viewBox="0 0 24 24" x-show="goalsTotal >= {{ g_cents }}" x-cloak><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+                      </span>
+                      <span class="pm-bs-goals__label"><strong>{{ g_cents | money_without_trailing_zeros }}</strong> {{ st[k_title] | escape }}</span>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ol>
+            </div>
+          </div>
+        {%- else -%}
+          <div class="pm-bs-progress" aria-hidden="true">
+            <span class="pm-bs-progress__bar" :style="{ width: percent + '%' }"></span>
+          </div>
+        {%- endif -%}
+        <p class="pm-bs-hint" x-show="hintText" x-text="hintText" x-cloak></p>
+        {%- if st.search_enabled -%}
+          <div class="pm-bs-search" role="search">
+            <span class="pm-bs-search__icon" aria-hidden="true">{%- render 'pm-icon', icon: 'search', size: 16, stroke: 2 -%}</span>
+            <input
+              type="search"
+              class="pm-bs-search__input"
+              x-model="q"
+              placeholder="{{ st.search_placeholder | escape }}"
+              aria-label="{{ st.search_placeholder | escape }}"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              enterkeyhint="search"
+              @keydown.enter.prevent
+              @keydown.escape="q = ''"
+            >
+            <button type="button" class="pm-bs-search__clear" x-show="q" x-cloak @click="q = ''; $nextTick(function () { $el.previousElementSibling.focus(); })" aria-label="{{ st.search_clear | escape }}">
+              {%- render 'pm-icon', icon: 'close', size: 14, stroke: 2 -%}
+            </button>
+          </div>
+        {%- endif -%}
+        <div class="pm-bs-list" x-ref="list" @scroll.passive="checkScroll()" role="list">
+          {{ pm_rows }}
+        </div>
+        <p class="pm-bs-empty" x-show="visibleRows === 0 && !qTokens.length" x-cloak>{{ st.empty_text | escape }}</p>
+        <p class="pm-bs-empty" x-show="visibleRows === 0 && qTokens.length > 0" x-cloak>{{ st.search_empty | escape }}</p>
+        {%- if st.scroll_hint != blank -%}
+          <p class="pm-bs-scroll" x-show="!scrollEnd" aria-hidden="true">
+            {{ st.scroll_hint | escape }}
+            {%- render 'pm-icon', icon: 'chevron-down', size: 12, stroke: 2 -%}
+          </p>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} 7. CTA {%- endcomment -%}
+      <div class="pm-bs-cta">
+        {%- comment -%} Value summary: designer price and regular price of the picked bottles; the price itself sits on the button {%- endcomment -%}
+        <dl class="pm-bs-sum" aria-live="polite" x-show="showSummary" x-cloak>
+          <div class="pm-bs-sum__row" x-show="designerTotal > 0">
+            <dt>{{ st.sum_designer_label | escape }}</dt>
+            <dd><s x-text="money(designerTotal)"></s></dd>
+          </div>
+          <div class="pm-bs-sum__row" x-show="saveTotal > 0">
+            <dt x-text="regularLabel"></dt>
+            <dd><s x-text="money(regularTotal)"></s></dd>
+          </div>
+        </dl>
+        <button
+          type="button"
+          class="pm-btn pm-btn--primary pm-bs-cta__btn"
+          disabled
+          :disabled="!canAdd"
+          :aria-busy="adding ? 'true' : 'false'"
+          @click="addToCart()"
+          {% if pm_bp != blank %}data-bundle-product-id="{{ pm_bp.id }}"{% endif %}
+        >
+          <span x-text="ctaText">{{ st.cta_empty | escape }}</span>
+        </button>
+        <p class="pm-bs-error" role="alert" x-show="error" x-text="error" x-cloak></p>
+      </div>
+
+      {%- comment -%} 8. Payment icons {%- endcomment -%}
+      {%- if st.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+        {%- liquid
+          # Methods listed in "Ukryj ikony płatności" are skipped (e.g. cards not used in PL/EU)
+          # Compared without spaces, underscores, dashes or case ("sp_ideal_wero" = "spidealwero", the icon's name)
+          assign pm_pay_hide = st.payment_icons_hide | default: '' | downcase | remove: ' ' | remove: '_' | remove: '-' | prepend: ',' | append: ','
+          assign pm_pay_types = ''
+          for type in shop.enabled_payment_types
+            assign pm_pay_key = type | downcase | remove: '_' | remove: '-' | prepend: ',' | append: ','
+            unless pm_pay_hide contains pm_pay_key
+              assign pm_pay_types = pm_pay_types | append: type | append: ','
+            endunless
+          endfor
+          assign pm_pay_types = pm_pay_types | split: ','
+        -%}
+        <ul class="pm-bs-pay" aria-label="{{ 'premium.pdp.payment_methods' | t | escape }}">
+          {%- for type in pm_pay_types -%}
+            <li class="pm-bs-pay__item" data-type="{{ type | escape }}">{{ type | payment_type_svg_tag: class: 'pm-bs-pay__icon' }}</li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- comment -%} 8b. Delivery / InPost / guarantee badges, the same row as under the button on the product pages {%- endcomment -%}
+      {%- if st.show_shipping_badges -%}
+        <div class="pm-bs-badges">{% render 'shipping-badges' %}</div>
+      {%- endif -%}
+
+      {%- comment -%} 9. Mini review slider {%- endcomment -%}
+      {%- assign pm_rev_count = 0 -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'mini_review' and block.settings.quote != blank -%}
+          {%- assign pm_rev_count = pm_rev_count | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if pm_rev_count > 0 -%}
+        <div class="pm-bs-reviews" @mouseenter="revPaused = true" @mouseleave="revPaused = false" @focusin="revPaused = true" @focusout="revPaused = false">
+          <div class="pm-bs-reviews__stack">
+            {%- assign ri = 0 -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type != 'mini_review' or block.settings.quote == blank -%}{%- continue -%}{%- endif -%}
+              <figure
+                class="pm-bs-review{% if ri == 0 %} is-active{% endif %}"
+                :class="{ 'is-active': rev === {{ ri }} }"
+                :aria-hidden="rev === {{ ri }} ? 'false' : 'true'"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.image != blank -%}
+                  {{ block.settings.image | image_url: width: 160 | image_tag: width: 64, height: 64, loading: 'lazy', alt: block.settings.name, class: 'pm-bs-review__img' }}
+                {%- endif -%}
+                <div class="pm-bs-review__body">
+                  {%- render 'pm-stars', rating: 5, size: 12, class: 'pm-bs-review__stars' -%}
+                  <blockquote class="pm-bs-review__quote">{{ block.settings.quote | escape }}</blockquote>
+                  <figcaption class="pm-bs-review__by">
+                    {%- if block.settings.verified -%}
+                      {%- render 'pm-icon', icon: 'check-circle', size: 14, stroke: 1.75 -%}
+                    {%- endif -%}
+                    <span class="pm-bs-review__name">{{ block.settings.name | escape }}</span>
+                    {%- if block.settings.verified -%}
+                      <span class="pm-bs-review__verified">{{ st.verified_label | escape }}</span>
+                    {%- endif -%}
+                  </figcaption>
+                </div>
+              </figure>
+              {%- assign ri = ri | plus: 1 -%}
+            {%- endfor -%}
+          </div>
+          {%- if pm_rev_count > 1 -%}
+            <div class="pm-bs-dots">
+              {%- for i in (1..pm_rev_count) -%}
+                {%- assign di = forloop.index0 -%}
+                <button
+                  type="button"
+                  class="pm-bs-dot{% if di == 0 %} is-active{% endif %}"
+                  :class="{ 'is-active': rev === {{ di }} }"
+                  @click="rev = {{ di }}"
+                  aria-label="{{ forloop.index }} / {{ pm_rev_count }}"
+                ></button>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} 10. Mini FAQ {%- endcomment -%}
+      {%- capture pm_faq -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'mini_faq' and block.settings.question != blank -%}
+            <details {{ block.shopify_attributes }}>
+              <summary>{{ block.settings.question | escape }}</summary>
+              <div class="accordion__content rte">{{ block.settings.answer }}</div>
+            </details>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- if pm_faq != blank -%}
+        <div class="pm-accordion pm-bs-faq">{{ pm_faq }}</div>
+      {%- endif -%}
+
+      {%- comment -%} 11. Guarantee {%- endcomment -%}
+      {%- if st.guarantee_heading != blank or st.guarantee_text != blank -%}
+        <div class="pm-bs-guarantee">
+          {%- if st.guarantee_heading != blank -%}
+            <p class="pm-bs-guarantee__title">
+              {%- render 'pm-icon', icon: 'shield', size: 20, stroke: 1.5 -%}
+              <span>{{ st.guarantee_heading | escape }}</span>
+            </p>
+          {%- endif -%}
+          {%- if st.guarantee_text != blank -%}
+            <div class="pm-bs-guarantee__text rte">{{ st.guarantee_text }}</div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+{%- endif -%}
+
+<script>
+  (function () {
+    function register() {
+      if (window.__pmBundleSaveRegistered) return;
+      window.__pmBundleSaveRegistered = true;
+      window.Alpine.data('pmBundleSave', function () {
+        return {
+          cfg: null,
+          tierIndex: 0,
+          lineIndex: -1,
+          picks: [],
+          names: {},
+          rowLines: {},
+          rowSearch: {},
+          q: '',
+          designers: {},
+          adding: false,
+          error: '',
+          scrollEnd: false,
+          media: 0,
+          rev: 0,
+          revCount: 0,
+          revPaused: false,
+          clock: { h: '00', m: '00', s: '00' },
+
+          init: function () {
+            var self = this;
+            var node = this.$el.querySelector('[data-pm-bs-config]');
+            try {
+              this.cfg = JSON.parse(node ? node.textContent : '{}');
+            } catch (e) {
+              this.cfg = {};
+            }
+            this.cfg.tiers = this.cfg.tiers || [];
+            this.cfg.lines = this.cfg.lines || [];
+            this.cfg.variants = this.cfg.variants || {};
+            this.cfg.text = this.cfg.text || {};
+            this.tierIndex = Math.min(Math.max(this.cfg.tierStart || 0, 0), Math.max(this.cfg.tiers.length - 1, 0));
+            this.lineIndex = typeof this.cfg.lineStart === 'number' ? this.cfg.lineStart : -1;
+
+            this.$el.querySelectorAll('[data-pm-bs-row]').forEach(function (row) {
+              self.names[row.dataset.vid] = row.dataset.title;
+              self.rowLines[row.dataset.vid] = row.dataset.line || '';
+              self.rowSearch[row.dataset.vid] = self.fold((row.dataset.title || '') + ' ' + (row.dataset.search || ''));
+              self.designers[row.dataset.vid] = Math.max(0, Math.round(Number(row.dataset.designer) || 0));
+            });
+            this.revCount = this.$el.querySelectorAll('.pm-bs-review').length;
+
+            if (this.cfg.timerOn) this.startTimer();
+            if (this.revCount > 1) this.startReviews();
+            this.$watch('lineIndex', function () {
+              if (self.$refs.list) self.$refs.list.scrollTop = 0;
+              self.$nextTick(function () { self.checkScroll(); });
+            });
+            this.$watch('q', function () {
+              if (self.$refs.list) self.$refs.list.scrollTop = 0;
+              self.$nextTick(function () { self.checkScroll(); });
+            });
+            this.$nextTick(function () { self.checkScroll(); });
+          },
+
+          /* Tiers */
+          get tier() { return this.cfg.tiers[this.tierIndex] || { bottles: 1, cap: 1 }; },
+          get target() { return this.tier.bottles; },
+          get cap() { return this.tier.cap; },
+          get maxTotal() { return this.cfg.maxTotal || 0; },
+          get atMax() { return this.picks.length >= this.maxTotal; },
+          liveTier: function (i) {
+            if (this.tierIndex !== i) return null;
+            var t = this.cfg.tiers[i];
+            var n = this.picks.length;
+            if (!t || n <= t.bottles || n > t.cap) return null;
+            return this.cfg.variants[String(n)] || null;
+          },
+          selectTier: function (i) {
+            this.tierIndex = i;
+            if (this.picks.length > this.cap) this.picks = this.picks.slice(0, this.cap);
+            this.error = '';
+          },
+          bumpTier: function () {
+            var count = this.picks.length;
+            if (count <= this.cap) return;
+            var best = -1;
+            this.cfg.tiers.forEach(function (t, i) {
+              if (t.cap < count) return;
+              if (best === -1) { best = i; return; }
+              var b = this.cfg.tiers[best];
+              if (t.cap < b.cap || (t.cap === b.cap && t.bottles < b.bottles)) best = i;
+            }, this);
+            if (best !== -1) this.tierIndex = best;
+          },
+
+          /* Lines */
+          toggleLine: function (i) { this.lineIndex = this.lineIndex === i ? -1 : i; },
+          lineOk: function (line) {
+            if (this.lineIndex < 0) return true;
+            var l = this.cfg.lines[this.lineIndex];
+            return !l || (l.tag || '') === line;
+          },
+          lineCount: function (i) {
+            var l = this.cfg.lines[i];
+            if (!l) return 0;
+            var tag = l.tag || '';
+            return this.picks.filter(function (vid) { return this.rowLines[vid] === tag; }, this).length;
+          },
+          linePickedText: function (i) {
+            return String(this.cfg.text.linePicked || '[n]').replace('[n]', this.lineCount(i));
+          },
+          get visibleRows() {
+            if (this.qTokens.length) {
+              return Object.keys(this.rowSearch).filter(function (vid) {
+                return this.lineOk(this.rowLines[vid]) && this.searchOk(vid);
+              }, this).length;
+            }
+            if (this.lineIndex < 0) return this.cfg.rowCount || 0;
+            var l = this.cfg.lines[this.lineIndex];
+            return l ? l.count : 0;
+          },
+
+          /* Rating link: smooth scroll to an on-page anchor (#reviews); other links navigate normally */
+          scrollToAnchor: function (e) {
+            var href = e.currentTarget.getAttribute('href') || '';
+            if (href.charAt(0) !== '#') return;
+            var target = document.getElementById(href.slice(1));
+            if (!target) return;
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          },
+
+          /* Search: brand / perfume / occasion. Accents folded (wieczór = wieczor), every word must match;
+             longer words drop their Polish ending so 'randkę' finds 'Randka' and 'wieczorem' finds 'Wieczór'. */
+          fold: function (s) {
+            return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, ' ').trim();
+          },
+          get qTokens() {
+            var alias = { ysl: 'yves', jpg: 'gaultier', mfk: 'kurkdjian', dg: 'dolce', ck: 'calvin' };
+            var words = this.fold(this.q).split(' ').filter(function (w) { return w.length > 0; });
+            return words.map(function (w) {
+              if (alias[w]) return alias[w];
+              if (w.length >= 7) return w.slice(0, -2);
+              if (w.length >= 5) return w.slice(0, -1);
+              return w;
+            });
+          },
+          searchOk: function (vid) {
+            var tokens = this.qTokens;
+            if (!tokens.length) return true;
+            var hay = ' ' + (this.rowSearch[String(vid)] || '');
+            return tokens.every(function (t) { return hay.indexOf(' ' + t) !== -1; });
+          },
+
+          /* Picks */
+          qty: function (vid) {
+            var key = String(vid);
+            return this.picks.filter(function (p) { return p === key; }).length;
+          },
+          add: function (vid) {
+            if (this.atMax) return;
+            this.picks.push(String(vid));
+            this.bumpTier();
+            this.error = '';
+          },
+          remove: function (vid) {
+            var i = this.picks.lastIndexOf(String(vid));
+            if (i > -1) this.picks.splice(i, 1);
+            this.error = '';
+          },
+          get shownTotal() { return Math.max(this.target, this.picks.length); },
+          get percent() {
+            return this.shownTotal ? Math.min(100, Math.round((this.picks.length / this.shownTotal) * 100)) : 0;
+          },
+          get scentsHeading() { return String(this.cfg.text.scentsHeading || '').replace('[n]', this.shownTotal); },
+          get counterText() {
+            return String(this.cfg.text.counter || '').replace('[x]', this.picks.length).replace('[n]', this.shownTotal);
+          },
+          get hintText() {
+            var n = this.picks.length;
+            if (n > 0 && n >= this.maxTotal) return String(this.cfg.text.max || '').replace('[max]', this.maxTotal);
+            if (n > 0 && n < this.target) return String(this.cfg.text.remaining || '').replace('[remaining]', this.target - n);
+            return '';
+          },
+
+          /* Price + CTA */
+          get bundleVariant() { return this.cfg.variants[String(this.picks.length)] || null; },
+
+          /* Spend goals: the bundle price the CTA shows, against the goal amounts (cents, market currency) */
+          get goalsTotal() {
+            var v = this.bundleVariant;
+            return v ? Number(v.price) || 0 : 0;
+          },
+          get goalsFill() {
+            var g = this.cfg.goals || [];
+            var n = g.length;
+            var total = this.goalsTotal;
+            if (!n) return 0;
+            if (total >= g[n - 1].cents) return 100;
+            var prevCents = 0;
+            var prevPos = 0;
+            for (var i = 0; i < n; i++) {
+              var pos = ((i + 0.5) / n) * 100;
+              if (total < g[i].cents) return prevPos + ((total - prevCents) / (g[i].cents - prevCents)) * (pos - prevPos);
+              prevCents = g[i].cents;
+              prevPos = pos;
+            }
+            return 100;
+          },
+          get goalsMsg() {
+            var esc = function (s) {
+              return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+            };
+            var total = this.goalsTotal;
+            var next = (this.cfg.goals || []).filter(function (g) { return total < g.cents; })[0];
+            if (!next) return esc(this.cfg.text.goalsDone || '');
+            return esc(this.cfg.text.goalsNext || '')
+              .replace('[amount]', '<strong>' + esc(this.money(next.cents - total)) + '</strong>')
+              .replace('[goal]', '<strong>' + esc(next.unlock || '') + '</strong>');
+          },
+          /* Value summary above the CTA (cents, shopper's currency). The designer line only shows when every
+             pick has a designer price, so a partial sum is never set against the whole bundle */
+          get designerTotal() {
+            var map = this.designers;
+            var all = this.picks.length > 0 && this.picks.every(function (vid) { return (map[vid] || 0) > 0; });
+            return all ? this.picks.reduce(function (sum, vid) { return sum + map[vid]; }, 0) : 0;
+          },
+          get regularTotal() {
+            var v = this.bundleVariant;
+            return v ? Number(v.compare) || 0 : 0;
+          },
+          get saveTotal() {
+            var v = this.bundleVariant;
+            return v ? Math.max(0, this.regularTotal - (Number(v.price) || 0)) : 0;
+          },
+          get showSummary() { return this.cfg.mode !== 'per_line' && this.picks.length > 0 && !!this.bundleVariant; },
+          get regularLabel() { return String(this.cfg.text.sumRegular || '').replace('[n]', this.picks.length); },
+          get canAdd() {
+            if (this.adding || this.picks.length === 0) return false;
+            if (this.cfg.mode === 'per_line') return true;
+            return !!(this.bundleVariant && this.bundleVariant.available);
+          },
+          get ctaText() {
+            if (this.adding) return this.cfg.text.adding || '';
+            if (this.picks.length === 0) return this.cfg.text.ctaEmpty || '';
+            var v = this.bundleVariant;
+            if (this.cfg.mode !== 'per_line' && v) return this.cfg.text.cta + ' · ' + this.money(v.price);
+            return this.cfg.text.cta || '';
+          },
+          money: function (cents) {
+            var out = typeof window.pmMoney === 'function'
+              ? window.pmMoney(cents)
+              : (Math.round(Number(cents) || 0) / 100).toFixed(2).replace('.', ',') + ' zł';
+            return out.replace(/[.,]00(?=\D*$)/, '');
+          },
+          addToCart: function () {
+            if (!this.canAdd) return;
+            var self = this;
+            var items;
+            if (this.cfg.mode === 'per_line') {
+              var counts = {};
+              var order = [];
+              this.picks.forEach(function (vid) {
+                if (!counts[vid]) { counts[vid] = 0; order.push(vid); }
+                counts[vid] += 1;
+              });
+              items = order.map(function (vid) { return { id: Number(vid), quantity: counts[vid] }; });
+            } else {
+              var props = {};
+              var label = this.cfg.text.bottle || 'Flakon';
+              this.picks.forEach(function (vid, i) { props[label + ' ' + (i + 1)] = self.names[vid] || vid; });
+              props._bundle_items = this.picks.join(',');
+              items = [{ id: this.bundleVariant.id, quantity: 1, properties: props }];
+            }
+
+            var cart = document.querySelector('cart-drawer');
+            var body = { items: items };
+            if (cart && typeof cart.getSectionsToRender === 'function') {
+              body.sections = cart.getSectionsToRender().map(function (s) { return s.id; });
+              body.sections_url = window.location.pathname;
+              if (typeof cart.setActiveElement === 'function') cart.setActiveElement(document.activeElement);
+            }
+            var root = (window.Shopify && window.Shopify.routes && window.Shopify.routes.root) || '/';
+
+            this.adding = true;
+            this.error = '';
+            fetch(root + 'cart/add.js', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+              body: JSON.stringify(body)
+            })
+              .then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                  if (!res.ok || data.status) {
+                    var err = new Error(data.description || data.message || 'cart');
+                    err.data = data;
+                    throw err;
+                  }
+                  return data;
+                });
+              })
+              .then(function (data) {
+                if (cart && typeof cart.renderContents === 'function' && data.sections) {
+                  if (typeof publish === 'function' && typeof PUB_SUB_EVENTS !== 'undefined') {
+                    publish(PUB_SUB_EVENTS.cartUpdate, { source: 'pm-bundle-save', cartData: data });
+                  }
+                  cart.renderContents(data);
+                  if (cart.classList.contains('is-empty')) cart.classList.remove('is-empty');
+                } else {
+                  window.location.href = (window.routes && window.routes.cart_url) || root + 'cart';
+                }
+              })
+              .catch(function (err) {
+                var d = (err && err.data) || {};
+                self.error = d.description || d.message || self.cfg.text.error || '';
+              })
+              .finally(function () { self.adding = false; });
+          },
+
+          /* Gallery */
+          onTrack: function () {
+            var t = this.$refs.track;
+            if (!t || !t.clientWidth) return;
+            this.media = Math.round(t.scrollLeft / t.clientWidth);
+          },
+          goTo: function (i) {
+            var t = this.$refs.track;
+            if (!t) return;
+            var n = t.children.length;
+            var idx = Math.max(0, Math.min(n - 1, i));
+            this.media = idx;
+            t.scrollTo({ left: idx * t.clientWidth, behavior: 'smooth' });
+          },
+
+          /* Scroll hint */
+          checkScroll: function () {
+            var l = this.$refs.list;
+            if (!l) return;
+            this.scrollEnd = l.scrollTop + l.clientHeight >= l.scrollHeight - 8;
+          },
+
+          /* Countdown: evergreen per visitor, start stored in localStorage, restarts after each period */
+          /* Counts down to the shopper's next local midnight, the same deadline as the top bar (offer-timebar) */
+          startTimer: function () {
+            var self = this;
+            var nextMidnight = function () {
+              var d = new Date();
+              d.setHours(24, 0, 0, 0);
+              return d.getTime();
+            };
+            var end = nextMidnight();
+            var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+            var tick = function () {
+              if (Date.now() >= end) end = nextMidnight();
+              var left = Math.max(0, end - Date.now());
+              var s = Math.floor(left / 1000);
+              self.clock = { h: pad(Math.floor(s / 3600)), m: pad(Math.floor((s % 3600) / 60)), s: pad(s % 60) };
+            };
+            tick();
+            clearInterval(this._timerId);
+            this._timerId = setInterval(tick, 1000);
+          },
+
+          /* Alpine calls this when the theme editor re-renders the section */
+          destroy: function () {
+            clearInterval(this._timerId);
+            clearInterval(this._revId);
+          },
+
+          /* Reviews */
+          startReviews: function () {
+            var self = this;
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduce) return;
+            clearInterval(this._revId);
+            this._revId = setInterval(function () {
+              if (self.revPaused || document.hidden) return;
+              self.rev = (self.rev + 1) % self.revCount;
+            }, this.cfg.reviewMs || 5000);
+          }
+        };
+      });
+    }
+
+    if (window.Alpine) {
+      register();
+    } else {
+      document.addEventListener('alpine:init', register);
+    }
+
+    /* Theme editor: a freshly added or re-rendered section can reach Alpine before the
+       component is registered, so re-init its tree once the section has loaded */
+    if (!window.pmBundleSaveEditorHook) {
+      window.pmBundleSaveEditorHook = true;
+      document.addEventListener('shopify:section:load', function (e) {
+        var el = e.target && e.target.querySelector('[x-data="pmBundleSave"]');
+        if (!el || !window.Alpine) return;
+        register();
+        if (window.Alpine.destroyTree) window.Alpine.destroyTree(el);
+        window.Alpine.initTree(el);
+      });
+    }
+
+    /* Load Alpine once if no other section on the page brought it (other Alpine sections load it with a defer tag) */
+    function ensureAlpine() {
+      if (window.Alpine || document.querySelector('script[data-pm-alpine]')) return;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js';
+      s.defer = true;
+      s.setAttribute('data-pm-alpine', '');
+      document.head.appendChild(s);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ensureAlpine);
+    } else {
+      ensureAlpine();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Zestaw: wybór zapachów",
+  "tag": "div",
+  "class": "section-pm-bundle-save",
+  "settings": [
+    {
+      "type": "text",
+      "id": "bundle_handle",
+      "label": "Uchwyt produktu zestawu",
+      "default": "zestaw-perfum",
+      "info": "Używany, gdy pole „Produkt zestawu” jest puste. Warianty: „1 flakon”, „2 flakony”, „3 flakony”, „4 flakony”, „5 flakonów” (albo „1 Bottle”…). Liczy się liczba na początku nazwy."
+    },
+    {
+      "type": "product",
+      "id": "bundle_product",
+      "label": "Produkt zestawu",
+      "info": "Puste = produkt o uchwycie z pola wyżej, a gdy go nie ma, produkt tej strony (szablon bundle-save)."
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Kolekcja zapachów",
+      "info": "Puste = bestseller-singles. Pomijane: produkty z tagiem „bundle”, wyprzedane i jednorozmiarowe (np. mystery box)."
+    },
+    {
+      "type": "text",
+      "id": "bottle_size",
+      "label": "Rozmiar flakonu w zestawie",
+      "default": "50ml",
+      "info": "Do zestawu trafia wariant zapachu, którego nazwa zaczyna się od tej wartości (50ml, 50 ml i 50ML pasują). Zapach bez dostępnego wariantu w tym rozmiarze nie jest pokazywany. Puste = pierwszy dostępny wariant."
+    },
+    {
+      "type": "select",
+      "id": "pricing_mode",
+      "label": "Tryb koszyka",
+      "options": [
+        {
+          "value": "bundle_product",
+          "label": "Jedna linia zestawu (cena wariantu zestawu)"
+        },
+        {
+          "value": "per_line",
+          "label": "Osobna linia na każdy zapach"
+        }
+      ],
+      "default": "bundle_product",
+      "info": "„Osobna linia na każdy zapach” dodaje zapachy po ich cenach: ceny zestawu musi wtedy odtworzyć automatyczny rabat w panelu."
+    },
+    {
+      "type": "text",
+      "id": "single_price",
+      "label": "Cena pojedynczego flakonu do przekreślonych cen",
+      "info": "Tylko gdy wariant zestawu nie ma ceny porównawczej. Puste = bez przekreślonej ceny."
+    },
+    {
+      "type": "text",
+      "id": "bottle_property",
+      "label": "Etykieta zapachu w koszyku",
+      "default": "Flakon"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Wstęp"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "Pokaż ocenę sklepu",
+      "default": true,
+      "info": "Ocena i liczba opinii z Judge.me (wszystkie opinie sklepu). Bez danych z Judge.me linia się nie pokazuje."
+    },
+    {
+      "type": "text",
+      "id": "rating_label",
+      "label": "Etykieta oceny",
+      "default": "Ocena klientów"
+    },
+    {
+      "type": "url",
+      "id": "rating_link",
+      "label": "Link oceny"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "headline",
+      "label": "Nagłówek",
+      "default": "Kup więcej, <em>zapłać mniej</em>",
+      "info": "Tekst kursywą wyświetla się na szaro jako akcent."
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Podtytuł",
+      "default": "Złóż swój zestaw ulubionych zapachów i zaoszczędź nawet 40%"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Opis (kilka akapitów)",
+      "info": "Gdy wypełniony, zastępuje podtytuł."
+    },
+    {
+      "type": "header",
+      "content": "Odliczanie"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_timer",
+      "label": "Pokaż odliczanie",
+      "default": false,
+      "info": "Każdy odwiedzający dostaje własny licznik, który startuje od nowa po końcu. Włączaj tylko przy prawdziwej ofercie z datą końca."
+    },
+    {
+      "type": "text",
+      "id": "timer_label",
+      "label": "Nazwa odliczania",
+      "default": "Odliczanie oferty",
+      "info": "Czytane przez czytniki ekranu, niewidoczne na stronie."
+    },
+    {
+      "type": "text",
+      "id": "timer_eyebrow",
+      "label": "Nadtytuł",
+      "default": "Do [max]% taniej w zestawie",
+      "info": "[max] = największa oszczędność wśród wariantów zestawu. Część przed pierwszym „·” jest pogrubiona."
+    },
+    {
+      "type": "text",
+      "id": "timer_title",
+      "label": "Tytuł",
+      "default": "Oferta zestawów"
+    },
+    {
+      "type": "range",
+      "id": "timer_hours",
+      "label": "Długość odliczania",
+      "min": 1,
+      "max": 48,
+      "step": 1,
+      "unit": "h",
+      "default": 24,
+      "info": "Nieużywane: licznik odlicza do północy (czas kupującego), tak samo jak górny pasek."
+    },
+    {
+      "type": "text",
+      "id": "timer_hrs_label",
+      "label": "Etykieta godzin",
+      "default": "godz."
+    },
+    {
+      "type": "text",
+      "id": "timer_mins_label",
+      "label": "Etykieta minut",
+      "default": "min"
+    },
+    {
+      "type": "text",
+      "id": "timer_secs_label",
+      "label": "Etykieta sekund",
+      "default": "sek."
+    },
+    {
+      "type": "header",
+      "content": "Wielkość zestawu i filtr"
+    },
+    {
+      "type": "text",
+      "id": "tiers_heading",
+      "label": "Nagłówek wielkości zestawu",
+      "default": "Wybierz wielkość zestawu"
+    },
+    {
+      "type": "text",
+      "id": "saving_badge",
+      "label": "Plakietka oszczędności",
+      "default": "-[pct]%",
+      "info": "[pct] = oszczędność wariantu względem ceny porównawczej. Puste = bez plakietki."
+    },
+    {
+      "type": "text",
+      "id": "per_bottle_text",
+      "label": "Cena za flakon",
+      "default": "[price] za flakon",
+      "info": "[price] = cena karty podzielona przez liczbę flakonów. Puste ukrywa linię."
+    },
+    {
+      "type": "text",
+      "id": "stack_text",
+      "label": "Notka o kolejnym flakonie (karta 4+)",
+      "default": "Kolejny flakon za [price]",
+      "info": "Na kartach, których maksimum jest wyższe niż liczba flakonów. [price] = cena każdego kolejnego flakonu."
+    },
+    {
+      "type": "text",
+      "id": "lines_heading",
+      "label": "Nagłówek filtra",
+      "default": "Dla kogo szukasz zapachów?"
+    },
+    {
+      "type": "text",
+      "id": "line_picked_text",
+      "label": "Wybrane w grupie",
+      "default": "Wybrane: [n]",
+      "info": "[n] = liczba zapachów wybranych z tej grupy."
+    },
+    {
+      "type": "header",
+      "content": "Wybór zapachów"
+    },
+    {
+      "type": "text",
+      "id": "scents_heading",
+      "label": "Nagłówek",
+      "default": "Wybierz zapachy ([n] szt.)",
+      "info": "[n] = liczba flakonów w wybranym zestawie."
+    },
+    {
+      "type": "text",
+      "id": "counter_text",
+      "label": "Licznik",
+      "default": "Wybrano [x] z [n]"
+    },
+    {
+      "type": "text",
+      "id": "remaining_text",
+      "label": "Podpowiedź: brakuje",
+      "default": "Do pełnego zestawu brakuje: [remaining]"
+    },
+    {
+      "type": "text",
+      "id": "max_text",
+      "label": "Podpowiedź: maksimum",
+      "default": "Zestaw ma już maksymalną liczbę flakonów ([max])"
+    },
+    {
+      "type": "text",
+      "id": "add_label",
+      "label": "Przycisk dodawania",
+      "default": "Dodaj"
+    },
+    {
+      "type": "text",
+      "id": "inspired_prefix",
+      "label": "Przedrostek inspiracji",
+      "default": "Inspiracja:",
+      "info": "Przed nazwą perfum z pola inspired_by. Okazje pochodzą z pola occasion."
+    },
+    {
+      "type": "text",
+      "id": "scroll_hint",
+      "label": "Podpowiedź przewijania",
+      "default": "Przewiń, aby zobaczyć więcej zapachów"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Tekst pustej grupy",
+      "default": "Brak zapachów w tej grupie."
+    },
+    {
+      "type": "checkbox",
+      "id": "search_enabled",
+      "label": "Pokaż wyszukiwarkę",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Wyszukiwarka: podpowiedź",
+      "default": "Szukaj marki lub okazji, np. Dior, randka"
+    },
+    {
+      "type": "text",
+      "id": "search_empty",
+      "label": "Wyszukiwarka: brak wyników",
+      "default": "Nie znaleźliśmy takiego zapachu. Spróbuj innej marki lub okazji."
+    },
+    {
+      "type": "text",
+      "id": "search_clear",
+      "label": "Wyszukiwarka: przycisk czyszczenia",
+      "default": "Wyczyść wyszukiwanie"
+    },
+    {
+      "type": "header",
+      "content": "Pasek progów (darmowa dostawa, prezent)"
+    },
+    {
+      "type": "paragraph",
+      "content": "Pasek nad listą zapachów, w miejscu zwykłego paska postępu. Liczy cenę zestawu z przycisku. Progi muszą zgadzać się z regułami w aplikacji (Kite) i stawkami wysyłki."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_goals",
+      "label": "Pokaż pasek progów",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "goals_markets",
+      "label": "Rynki z progami",
+      "default": "poland",
+      "info": "Uchwyty rynków (Markets) po przecinku. Na innych rynkach paska nie ma, zostaje zwykły pasek postępu."
+    },
+    {
+      "type": "text",
+      "id": "goals_msg_next",
+      "label": "Komunikat: do następnego progu",
+      "default": "Dodaj jeszcze [amount], aby odblokować [goal]",
+      "info": "[amount] = brakująca kwota, [goal] = tekst odblokowania progu."
+    },
+    {
+      "type": "text",
+      "id": "goals_msg_done",
+      "label": "Komunikat: wszystkie progi",
+      "default": "Darmowa dostawa i Beauty-box odblokowane"
+    },
+    {
+      "type": "number",
+      "id": "goal_1_amount",
+      "label": "Próg 1: kwota",
+      "default": 150,
+      "info": "W walucie rynku. 0 = bez progu."
+    },
+    {
+      "type": "text",
+      "id": "goal_1_title",
+      "label": "Próg 1: etykieta",
+      "default": "Darmowa dostawa"
+    },
+    {
+      "type": "text",
+      "id": "goal_1_unlock",
+      "label": "Próg 1: tekst odblokowania",
+      "default": "darmową dostawę"
+    },
+    {
+      "type": "select",
+      "id": "goal_1_icon",
+      "label": "Próg 1: ikona",
+      "options": [
+        { "value": "shipping", "label": "Dostawa" },
+        { "value": "gift", "label": "Prezent" }
+      ],
+      "default": "shipping"
+    },
+    {
+      "type": "number",
+      "id": "goal_2_amount",
+      "label": "Próg 2: kwota",
+      "default": 200,
+      "info": "Wyższa niż próg 1. 0 = bez progu."
+    },
+    {
+      "type": "text",
+      "id": "goal_2_title",
+      "label": "Próg 2: etykieta",
+      "default": "Beauty-box gratis"
+    },
+    {
+      "type": "text",
+      "id": "goal_2_unlock",
+      "label": "Próg 2: tekst odblokowania",
+      "default": "darmowy Beauty-box"
+    },
+    {
+      "type": "select",
+      "id": "goal_2_icon",
+      "label": "Próg 2: ikona",
+      "options": [
+        { "value": "shipping", "label": "Dostawa" },
+        { "value": "gift", "label": "Prezent" }
+      ],
+      "default": "gift"
+    },
+    {
+      "type": "header",
+      "content": "Przycisk"
+    },
+    {
+      "type": "text",
+      "id": "cta_empty",
+      "label": "Tekst bez wyboru",
+      "default": "Wybierz co najmniej 1 zapach"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Tekst przycisku",
+      "default": "Dodaj do koszyka",
+      "info": "Po nim pojawia się cena zestawu dla wybranej liczby flakonów."
+    },
+    {
+      "type": "text",
+      "id": "cta_adding",
+      "label": "Tekst ładowania",
+      "default": "Dodawanie..."
+    },
+    {
+      "type": "text",
+      "id": "error_text",
+      "label": "Tekst błędu",
+      "default": "Coś poszło nie tak. Spróbuj ponownie."
+    },
+    {
+      "type": "text",
+      "id": "sum_designer_label",
+      "label": "Podsumowanie: cena u projektantów",
+      "default": "Cena markowych",
+      "info": "Suma pola „Original Retail Price” wybranych zapachów. Wiersz pokazuje się tylko, gdy każdy wybrany zapach ma to pole."
+    },
+    {
+      "type": "text",
+      "id": "sum_regular_label",
+      "label": "Podsumowanie: cena regularna",
+      "default": "Nasza cena regularna",
+      "info": "[n] = liczba wybranych flakonów."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Pokaż ikony płatności",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "payment_icons_hide",
+      "label": "Ukryj ikony płatności",
+      "default": "american_express, bancontact, ideal, unionpay",
+      "info": "Kody metod oddzielone przecinkami (np. american_express, unionpay). Kod każdej ikony jest w atrybucie data-type na stronie."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shipping_badges",
+      "label": "Pokaż odznaki dostawy i gwarancji",
+      "info": "Ten sam rząd co pod przyciskiem na stronach produktów: dostawa 48 h, InPost, 60 dni gwarancji.",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Opinie"
+    },
+    {
+      "type": "range",
+      "id": "review_interval",
+      "label": "Automatyczne przewijanie",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 5
+    },
+    {
+      "type": "text",
+      "id": "verified_label",
+      "label": "Etykieta weryfikacji",
+      "default": "Zweryfikowany zakup"
+    },
+    {
+      "type": "header",
+      "content": "Gwarancja"
+    },
+    {
+      "type": "text",
+      "id": "guarantee_heading",
+      "label": "Nagłówek",
+      "default": "60-dniowa gwarancja zwrotu pieniędzy"
+    },
+    {
+      "type": "richtext",
+      "id": "guarantee_text",
+      "label": "Tekst",
+      "default": "<p>Wypróbuj zapach spokojnie w domu. Nie pasuje do Ciebie? Masz 60 dni na zwrot.</p>"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "benefit",
+      "name": "Korzyść",
+      "limit": 5,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Ikona",
+          "options": [
+            {
+              "value": "drop",
+              "label": "Drop"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "sparkle",
+              "label": "Sparkle"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            },
+            {
+              "value": "shield",
+              "label": "Shield"
+            },
+            {
+              "value": "check-circle",
+              "label": "Check"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "star",
+              "label": "Star"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "return",
+              "label": "Return"
+            }
+          ],
+          "default": "drop"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Tekst",
+          "default": "20% olejków zapachowych z Grasse"
+        }
+      ]
+    },
+    {
+      "type": "tier",
+      "name": "Wielkość zestawu",
+      "limit": 5,
+      "settings": [
+        {
+          "type": "range",
+          "id": "bottles",
+          "label": "Flakony",
+          "min": 1,
+          "max": 20,
+          "step": 1,
+          "default": 1,
+          "info": "Cena pochodzi z wariantu zestawu o tej liczbie flakonów."
+        },
+        {
+          "type": "range",
+          "id": "max_bottles",
+          "label": "Maksimum flakonów na tej karcie",
+          "min": 1,
+          "max": 20,
+          "step": 1,
+          "default": 1,
+          "info": "Dla karty „4+” ustaw najwyższą liczbę flakonów. Wymaga wariantu zestawu dla każdej liczby do tej wartości. Wartości niższe niż Flakony są pomijane."
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Etykieta",
+          "default": "1 flakon"
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "label": "Podpis",
+          "default": "Na start"
+        },
+        {
+          "type": "text",
+          "id": "badge_override",
+          "label": "Plakietka",
+          "info": "Puste = oszczędność w % z ceny porównawczej wariantu (format w ustawieniach sekcji)."
+        },
+        {
+          "type": "text",
+          "id": "highlight",
+          "label": "Highlight badge",
+          "info": "E.g. Most popular. Black badge on the card's top edge, always visible."
+        },
+        {
+          "type": "checkbox",
+          "id": "tag_as_badge",
+          "label": "Show caption as highlight badge",
+          "info": "Used when Highlight badge is empty. The caption (and its translations) moves to the badge.",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "preselected",
+          "label": "Zaznaczona na start",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "name": "Filtr: grupa",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "group",
+          "label": "Grupa",
+          "options": [
+            {
+              "value": "women",
+              "label": "Dla niej"
+            },
+            {
+              "value": "men",
+              "label": "Dla niego"
+            },
+            {
+              "value": "unisex",
+              "label": "Unisex"
+            }
+          ],
+          "default": "women",
+          "info": "Z tagów produktu: Für Frauen / fuer-frauen / FÜR FRAUEN / dla-kobiet = dla niej, Für Männer / fuer-maenner / dla-mezczyzn = dla niego, unisex (albo oba) = unisex. Zapachy bez tagu widać tylko bez filtra."
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Etykieta",
+          "default": "Dla niej"
+        },
+        {
+          "type": "text",
+          "id": "subtext",
+          "label": "Podpis",
+          "default": "Zapachy: [count]",
+          "info": "[count] = liczba zapachów w grupie."
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Plakietka",
+          "info": "Spokojna plakietka nad kartą. Puste ukrywa."
+        },
+        {
+          "type": "checkbox",
+          "id": "preselected",
+          "label": "Zaznaczona na start",
+          "default": false,
+          "info": "Nic nie zaznaczone = wszystkie zapachy. Kliknięcie zaznaczonej karty pokazuje znowu wszystkie."
+        }
+      ]
+    },
+    {
+      "type": "mini_review",
+      "name": "Opinia",
+      "limit": 8,
+      "settings": [
+        {
+          "type": "textarea",
+          "id": "quote",
+          "label": "Cytat",
+          "info": "Tylko prawdziwe opinie (np. skopiowane z Judge.me). Puste = opinia się nie pokazuje."
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "Imię"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Zdjęcie"
+        },
+        {
+          "type": "checkbox",
+          "id": "verified",
+          "label": "Zweryfikowany zakup",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "mini_faq",
+      "name": "Pytanie",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "Pytanie",
+          "default": "Jak długo utrzymuje się zapach?"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Odpowiedź",
+          "default": "<p>Nawet do 12 godzin. Trwałość zależy od Twojej skóry. Nakładaj perfumy na skórę, a nie na ubrania.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Zestaw: wybór zapachów",
+      "blocks": [
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "drop",
+            "text": "20% olejków zapachowych z Grasse"
+          }
+        },
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "clock",
+            "text": "Trwałość nawet do 12 godzin"
+          }
+        },
+        {
+          "type": "benefit",
+          "settings": {
+            "icon": "shield",
+            "text": "60-dniowa gwarancja zwrotu pieniędzy"
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "bottles": 1,
+            "max_bottles": 1,
+            "label": "1 flakon",
+            "tag": "Na start"
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "bottles": 2,
+            "max_bottles": 2,
+            "label": "2 flakony",
+            "tag": "Dzień i wieczór"
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "bottles": 3,
+            "max_bottles": 3,
+            "label": "3 flakony",
+            "tag": "Na każdą okazję",
+            "preselected": true
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "bottles": 4,
+            "max_bottles": 5,
+            "label": "4+ flakony",
+            "tag": "Dla kolekcjonerów"
+          }
+        },
+        {
+          "type": "line",
+          "settings": {
+            "group": "women",
+            "label": "Dla niej",
+            "subtext": "Zapachy: [count]"
+          }
+        },
+        {
+          "type": "line",
+          "settings": {
+            "group": "men",
+            "label": "Dla niego",
+            "subtext": "Zapachy: [count]"
+          }
+        },
+        {
+          "type": "line",
+          "settings": {
+            "group": "unisex",
+            "label": "Unisex",
+            "subtext": "Zapachy: [count]"
+          }
+        },
+        {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Jak długo utrzymuje się zapach?",
+            "answer": "<p>Nawet do 12 godzin. Trwałość zależy od Twojej skóry. Nakładaj perfumy na skórę, a nie na ubrania.</p>"
+          }
+        },
+        {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Czy mogę połączyć różne zapachy?",
+            "answer": "<p>Tak. Wybierasz dowolne zapachy z listy, w dowolnym połączeniu. Ten sam zapach możesz dodać kilka razy.</p>"
+          }
+        },
+        {
+          "type": "mini_faq",
+          "settings": {
+            "question": "Co, jeśli zapach mi nie pasuje?",
+            "answer": "<p>Masz 60 dni gwarancji. Jeśli zapach nie jest dla Ciebie, zwróć zamówienie.</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

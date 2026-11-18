@@ -1,0 +1,135 @@
+/* pm-s-popular-products.css (WP-E): sections/popular-products.liquid (home + 6 collection templates).
+   Loaded by the section itself, so the CSS travels with it. Cards are the shared pm-card contract (WP-D).
+   Swiper: 1.25 / 2.2 (750) / 3 (990) / 4 (1200) slides, spaceBetween 12 / 20; at 375 the slider bleeds to
+   the viewport edges and the first slide is offset by the 20px gutter (slidesOffsetBefore in the section JS).
+   Arrows: 40px white circles (pm-base) centred on the card image. The .pm-popular__nav box has no height but a
+   padding-top equal to half a slide width (= half the 1:1 image height), so "bottom: -20px" puts the 40px arrow's
+   centre exactly on the image's vertical centre. Slide width = (W - (spv - 1) * spaceBetween) / spv. */
+
+/* 1. Header row: pm-title left, "View all" link right */
+.premium .pm-popular__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px;
+}
+
+.premium .pm-popular__title {
+  margin: 0;
+}
+
+.premium .pm-popular__link {
+  flex: none;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.premium .pm-popular__desc {
+  max-width: var(--pm-measure);
+  margin: -8px 0 24px;
+}
+
+.premium .pm-popular__desc > :first-child {
+  margin-top: 0;
+}
+
+.premium .pm-popular__desc > :last-child {
+  margin-bottom: 0;
+}
+
+/* 2. Slider: full-bleed at 375 (negative gutter margins), inside page-width from 750 */
+.premium .pm-popular__slider {
+  position: relative;
+  margin-left: calc(-1 * var(--pm-gutter));
+  margin-right: calc(-1 * var(--pm-gutter));
+  overflow: hidden;
+}
+
+.premium .pm-popular__slide {
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 3. Arrow rail: top of the slider, padding-top = half the slide width (1:1 image) so the arrows centre on the image */
+.premium .pm-popular__nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  height: 0;
+  padding-top: calc((100% - 3px) / 2.5);
+  pointer-events: none;
+}
+
+/* The arrows are <button> elements (accessible name via aria-label), so the UA button box is reset here:
+   no 2px outset border, no 1px/6px padding, no native appearance. Size, fill and shadow come from pm-base. */
+.premium .pm-popular .swiper-button-prev,
+.premium .pm-popular .swiper-button-next {
+  top: auto;
+  bottom: -20px;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  pointer-events: auto;
+}
+
+.premium .pm-popular .swiper-button-prev {
+  left: 8px;
+  right: auto;
+}
+
+.premium .pm-popular .swiper-button-next {
+  right: 8px;
+  left: auto;
+}
+
+.premium .pm-popular .swiper-button-prev.swiper-button-disabled,
+.premium .pm-popular .swiper-button-next.swiper-button-disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.premium .pm-popular .swiper-button-prev::after,
+.premium .pm-popular .swiper-button-next::after {
+  font-weight: 700;
+}
+
+@media (min-width: 750px) {
+  .premium .pm-popular__head {
+    margin-bottom: 32px;
+  }
+
+  .premium .pm-popular__slider {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .premium .pm-popular__nav {
+    padding-top: calc((100% - 24px) / 4.4);
+  }
+
+  .premium .pm-popular .swiper-button-prev {
+    left: 12px;
+  }
+
+  .premium .pm-popular .swiper-button-next {
+    right: 12px;
+  }
+}
+
+@media (min-width: 990px) {
+  .premium .pm-popular__nav {
+    padding-top: calc((100% - 40px) / 6);
+  }
+}
+
+@media (min-width: 1200px) {
+  .premium .pm-popular__nav {
+    padding-top: calc((100% - 60px) / 8);
+  }
+}

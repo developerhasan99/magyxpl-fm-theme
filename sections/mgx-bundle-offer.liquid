@@ -1,0 +1,1370 @@
+{%- comment -%}
+  Zestaw oferta (Nootri-style 3-tier bundle) for a PAGE template: no `product` object.
+  Scent pool = section collection; one variant per product matched by size token (variant_ml, e.g. 50 -> "50ml").
+  Tier math: before picks, base unit = most common price of the loaded variants; total = paid x base,
+  struck = (paid + free) x base. Selected tier with picks: struck = sum of slot prices (picked price or base
+  for empty slots), total = struck minus the cheapest `free` slots (same rule as the store's 2+1 / 3+2
+  automatic discounts on the top-sellers collection).
+  Add to cart: /cart/add.js (bottles + unlocked gift products) -> optional /cart/update.js discount codes
+  -> /checkout or /cart. The existing cart is never cleared.
+  Picker modal: snippets/mgx-bundle-offer-picker.liquid (teleported to body, same Alpine scope).
+  Styles: assets/mgx-bundle-offer.css (scope .mgx-bo, px only).
+{%- endcomment -%}
+{%- liquid
+  assign st = section.settings
+  assign coll = st.collection
+  assign per_page = st.max_products | default: 120 | plus: 0 | at_least: 1 | at_most: 250
+  assign target = st.variant_ml | default: '50' | downcase | remove: ' ' | remove: 'ml' | append: 'ml'
+  assign tlen = target.size
+  assign ml_label = target | remove: 'ml' | append: ' ml'
+
+  assign product_count = 0
+  assign price_list = ''
+  assign sep = ''
+-%}
+
+{%- if coll != blank -%}
+  {%- paginate coll.products by per_page -%}
+    {%- capture products_json -%}
+      [
+      {%- for p in coll.products -%}
+        {%- unless p.available -%}{%- continue -%}{%- endunless -%}
+        {%- assign match = nil -%}
+        {%- for v in p.variants -%}
+          {%- unless v.available -%}{%- continue -%}{%- endunless -%}
+          {%- assign vt = v.title | downcase | remove: ' ' | slice: 0, tlen -%}
+          {%- if vt == target -%}{%- assign match = v -%}{%- break -%}{%- endif -%}
+          {%- for opt in v.options -%}
+            {%- assign ot = opt | downcase | remove: ' ' | slice: 0, tlen -%}
+            {%- if ot == target -%}{%- assign match = v -%}{%- break -%}{%- endif -%}
+          {%- endfor -%}
+          {%- if match -%}{%- break -%}{%- endif -%}
+        {%- endfor -%}
+        {%- unless match -%}{%- continue -%}{%- endunless -%}
+        {%- assign product_count = product_count | plus: 1 -%}
+        {%- assign price_list = price_list | append: match.price | append: ',' -%}
+        {%- assign insp = p.metafields.custom.inspired_by.value.name | default: '' -%}
+        {{- sep -}}{
+          "variantId": {{ match.id }},
+          "productId": {{ p.id }},
+          "title": {% render 'polish-store-text', text: p.title, format: 'json' %},
+          "inspiration": {{ insp | json }},
+          "variantTitle": {{ match.title | json }},
+          "image": {% if p.featured_image %}{{ p.featured_image | image_url: width: 300 | json }}{% else %}""{% endif %},
+          "price": {{ match.price }},
+          "compare": {{ match.compare_at_price | default: 0 }},
+          "tags": {{ p.tags | json }}
+        }
+        {%- assign sep = ',' -%}
+      {%- endfor -%}
+      ]
+    {%- endcapture -%}
+  {%- endpaginate -%}
+{%- endif -%}
+
+{%- liquid
+  # base unit price = the most common price among the loaded variants
+  assign base_price = 0
+  if product_count > 0
+    assign all_prices = price_list | split: ','
+    assign uniq_prices = all_prices | uniq
+    assign best_count = 0
+    for up in uniq_prices
+      assign c = 0
+      for ap in all_prices
+        if ap == up
+          assign c = c | plus: 1
+        endif
+      endfor
+      if c > best_count
+        assign best_count = c
+        assign base_price = up | plus: 0
+      endif
+    endfor
+  endif
+
+  # tiers: default = first with default_selected, else the first tier
+  assign tier_blocks = section.blocks | where: 'type', 'tier'
+  assign gift_blocks = section.blocks | where: 'type', 'gift'
+  assign tier_count = tier_blocks.size
+  assign default_index = 0
+  for t in tier_blocks
+    if t.settings.default_selected
+      assign default_index = forloop.index0
+      break
+    endif
+  endfor
+  assign default_tier = tier_blocks[default_index]
+
+  assign has_products = false
+  if product_count > 0
+    assign has_products = true
+  endif
+-%}
+
+{{ 'mgx-bundle-offer.css' | asset_url | stylesheet_tag }}
+
+<script>
+  (function () {
+    if (window.__mgxBundleOfferRegistered) return;
+    window.__mgxBundleOfferRegistered = true;
+
+    var MONEY_CACHE = {};
+    function moneyFormatter(currency) {
+      if (!MONEY_CACHE[currency]) {
+        try {
+          MONEY_CACHE[currency] = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: currency });
+        } catch (e) {
+          MONEY_CACHE[currency] = { format: function (v) { return v.toFixed(2).replace('.', ',') + ' zł'; } };
+        }
+      }
+      return MONEY_CACHE[currency];
+    }
+    function fold(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
+    }
+    var FEMALE = ['fuer-frauen', 'für frauen', 'fur frauen', 'dla-kobiet', 'dla kobiet'];
+    var MALE = ['fuer-maenner', 'für männer', 'fur manner', 'dla-mezczyzn', 'dla mężczyzn', 'dla-mężczyzn', 'dla mezczyzn'];
+
+    function factory(configId) {
+      return {
+        cfg: { tiers: [], gifts: [], products: [], base: 0, currency: 'PLN' },
+        tierIndex: 0,
+        picks: [],
+        open: false,
+        q: '',
+        filter: 'all',
+        busy: false,
+        error: '',
+        activeSlide: '',
+        lastFocus: null,
+
+        init: function () {
+          var node = document.getElementById(configId);
+          if (node) {
+            try { this.cfg = JSON.parse(node.textContent); } catch (e) { this.cfg.products = []; }
+          }
+          this.cfg.products = (this.cfg.products || []).map(function (p) {
+            var tags = (p.tags || []).map(function (t) { return String(t).toLowerCase(); });
+            var f = tags.some(function (t) { return FEMALE.indexOf(t) > -1; });
+            var m = tags.some(function (t) { return MALE.indexOf(t) > -1; });
+            p.tags = tags;
+            p.gender = f && m ? 'u' : f ? 'f' : m ? 'm' : '';
+            p.search = fold(p.title + ' ' + p.inspiration);
+            return p;
+          });
+          this.tierIndex = this.cfg.defaultIndex || 0;
+        },
+
+        get tier() { return this.cfg.tiers[this.tierIndex] || { paid: 1, free: 0, label: '', unlock: {} }; },
+        get size() { return this.slotCount(this.tier); },
+        get remaining() { return Math.max(0, this.size - this.picks.length); },
+        get complete() { return this.size > 0 && this.remaining === 0; },
+        get atcText() {
+          if (this.complete) return this.cfg.atcLabel;
+          var r = this.remaining;
+          return String(this.cfg.atcIncomplete).replace('[n]', r + ' ' + this.word(r));
+        },
+        get slots() {
+          var out = [];
+          for (var i = 0; i < this.size; i++) {
+            out.push({ i: i, p: this.picks[i] || null, free: i >= this.tier.paid });
+          }
+          return out;
+        },
+        get filtered() {
+          var q = fold(this.q).trim();
+          var f = this.filter;
+          return this.cfg.products.filter(function (p) {
+            if (f === 'f' && p.gender !== 'f' && p.gender !== 'u') return false;
+            if (f === 'm' && p.gender !== 'm' && p.gender !== 'u') return false;
+            return q === '' || p.search.indexOf(q) > -1;
+          });
+        },
+
+        // "what you get" rows for the price comparison box, each with its list value:
+        // bottles at full price, gifts at their store price (struck, GRATIS), shipping as GRATIS
+        get summaryLines() {
+          var self = this, t = this.tier, n = this.slotCount(t), lines = [];
+          var first = n + ' ' + this.bottleWord(n) + ' po ' + (this.cfg.ml || '50 ml');
+          if (t.free) first += ' (' + t.free + ' gratis)';
+          lines.push({ label: first, value: this.money(this.bottlesFull(t, this.tierIndex)), free: false });
+          (this.cfg.gifts || []).forEach(function (g) {
+            if (!(t.unlock && t.unlock[g.key] && g.title)) return;
+            lines.push({ label: g.title, value: g.price ? self.money(g.price) : '', free: true });
+          });
+          return lines;
+        },
+
+        slotCount: function (t) { return (t.paid || 0) + (t.free || 0); },
+        bottleWord: function (n) {
+          if (n === 1) return 'flakon';
+          var m10 = n % 10, m100 = n % 100;
+          return m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'flakony' : 'flakonów';
+        },
+        word: function (n) {
+          if (n === 1) return 'zapach';
+          var m10 = n % 10, m100 = n % 100;
+          return m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'zapachy' : 'zapachów';
+        },
+        money: function (cents) { return moneyFormatter(this.cfg.currency).format((cents || 0) / 100); },
+
+        // bottle prices for a tier (selected tier uses the real picks, others the base 50 ml price)
+        units: function (t, idx) {
+          var n = this.slotCount(t), units = [], i;
+          for (i = 0; i < n; i++) {
+            var pick = idx === this.tierIndex ? this.picks[i] : null;
+            units.push(pick ? pick.price : this.cfg.base);
+          }
+          return units;
+        },
+        bottlesFull: function (t, idx) {
+          return this.units(t, idx).reduce(function (a, b) { return a + b; }, 0);
+        },
+        // list value of every bonus the tier unlocks (gift products + shipping list price)
+        giftValue: function (t) {
+          return (this.cfg.gifts || []).reduce(function (sum, g) {
+            return sum + (t.unlock && t.unlock[g.key] ? (g.price || 0) : 0);
+          }, 0);
+        },
+        // [struck, total]: struck = bottles at full price + bonus values; total = set product price
+        // (like the 6X bundles) or, without a set product, bottles minus the cheapest free ones
+        totals: function (t, idx) {
+          var struck = this.bottlesFull(t, idx) + this.giftValue(t);
+          if (t.setVariantId && t.setPrice != null) return [struck, t.setPrice];
+          var sorted = this.units(t, idx).sort(function (a, b) { return a - b; }), freeSum = 0, i;
+          for (i = 0; i < Math.min(t.free || 0, sorted.length); i++) freeSum += sorted[i];
+          return [struck, this.bottlesFull(t, idx) - freeSum];
+        },
+        tierTotal: function (t, idx) { return this.totals(t, idx)[1]; },
+        tierStruck: function (t, idx) { return this.totals(t, idx)[0]; },
+        // price per bottle: set price / every bottle in the order, the gift perfume included (5 + perfume = 6)
+        tierPer: function (t, idx) {
+          var n = this.slotCount(t) + (t.unlock && t.unlock.perfume && this.cfg.gifts.some(function (g) { return g.key === 'perfume'; }) ? 1 : 0);
+          return n ? Math.round(this.tierTotal(t, idx) / n) : 0;
+        },
+        tierSaved: function (t, idx) { return Math.max(0, this.tierStruck(t, idx) - this.tierTotal(t, idx)); },
+        tierSavings: function (t, idx) {
+          var full = this.tierStruck(t, idx == null ? -1 : idx);
+          return full > 0 ? Math.round(this.tierSaved(t, idx == null ? -1 : idx) * 100 / full) : 0;
+        },
+
+        selectTier: function (i) {
+          if (i === this.tierIndex) return;
+          this.tierIndex = i;
+          this.error = '';
+          if (this.picks.length > this.size) this.picks.splice(this.size);
+          var track = this.$refs.track;
+          if (track) this.$nextTick(function () { track.scrollTo({ left: 0, behavior: 'smooth' }); });
+        },
+
+        giftUnlocked: function (key) { return !!(this.tier.unlock && this.tier.unlock[key]); },
+        giftCaption: function (key) {
+          if (this.giftUnlocked(key)) return 'Odblokowane';
+          var best = null;
+          this.cfg.tiers.forEach(function (t) {
+            if (t.unlock && t.unlock[key] && (!best || t.paid < best.paid)) best = t;
+          });
+          return best ? 'Odblokuj w zestawie ' + best.label : 'Niedostępne';
+        },
+
+        countOf: function (p) {
+          return this.picks.filter(function (x) { return x.variantId === p.variantId; }).length;
+        },
+        add: function (p) {
+          if (this.picks.length >= this.size) return;
+          this.picks.push(p);
+          this.error = '';
+          if (this.picks.length >= this.size) {
+            var self = this;
+            setTimeout(function () { self.closePicker(); self.scrollToAtc(); }, 250);
+          }
+        },
+        // bundle complete -> bring the add-to-cart button to the middle of the screen
+        scrollToAtc: function () {
+          var btn = this.$refs.atc;
+          if (!btn) return;
+          requestAnimationFrame(function () { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+        },
+        removeOne: function (p) {
+          for (var i = this.picks.length - 1; i >= 0; i--) {
+            if (this.picks[i].variantId === p.variantId) { this.picks.splice(i, 1); return; }
+          }
+        },
+        toggle: function (p) {
+          if (this.countOf(p) > 0) this.removeOne(p);
+          else this.add(p);
+        },
+        removeAt: function (i) { this.picks.splice(i, 1); },
+
+        // rating stars -> reviews on the same page: theme reviews (sections/pm-reviews, #reviews / .pm-reviews), else any
+        // Judge.me reviews widget, else #mgx-reviews; offset for the sticky header
+        scrollToReviews: function () {
+          var own = document.getElementById('reviews') || document.querySelector('.pm-reviews');
+          var w = own ? null : document.querySelector('.jdgm-all-reviews-widget-v2025, .jdgm-all-reviews-widget, .jdgm-review-widget, [class*="jdgm-all-reviews"]');
+          var target = own || (w ? (w.closest('.shopify-section') || w) : document.getElementById('mgx-reviews'));
+          if (!target) return;
+          var header = document.querySelector('sticky-header, .section-header, header');
+          var offset = header ? Math.min(header.getBoundingClientRect().height, 140) + 8 : 16;
+          var y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        },
+        openPicker: function () {
+          if (!this.cfg.products.length) return;
+          this.lastFocus = document.activeElement;
+          this.open = true;
+          document.documentElement.style.overflow = 'hidden';
+          var self = this;
+          this.$nextTick(function () { if (self.$refs.search) self.$refs.search.focus({ preventScroll: true }); });
+        },
+        closePicker: function () {
+          if (!this.open) return;
+          this.open = false;
+          document.documentElement.style.overflow = '';
+          if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus({ preventScroll: true });
+        },
+
+        goTo: function (id) {
+          var track = this.$refs.track;
+          var slide = document.getElementById(id);
+          if (!track || !slide) return;
+          track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
+          this.activeSlide = id;
+        },
+        onTrackScroll: function () {
+          var track = this.$refs.track;
+          if (!track) return;
+          var best = null, dist = Infinity;
+          track.querySelectorAll('[data-slide]').forEach(function (s) {
+            if (s.offsetParent === null) return;
+            var d = Math.abs(s.offsetLeft - track.scrollLeft);
+            if (d < dist) { dist = d; best = s.id; }
+          });
+          if (best) this.activeSlide = best;
+        },
+
+        submit: function () {
+          if (this.busy) return;
+          if (!this.complete) { this.openPicker(); return; }
+          this.busy = true;
+          this.error = '';
+          var label = this.tier.label;
+          var tier = this.tier;
+          // same cart structure as the 6X / custom-offer-bundle products: ONE set line carrying the price,
+          // scents as _bundle_items + "Flakon N" properties (read by fulfillment), then each unlocked gift as its own line.
+          // Without a set product the bottles go in as separate lines (fallback).
+          var items = [];
+          if (tier.setVariantId) {
+            // unlocked gifts ride inside the set too (in _bundle_items + "Gratis N"), so they are not separate cart lines
+            var giftsIn = this.cfg.gifts.filter(function (g) { return g.variantId && tier.unlock && tier.unlock[g.key]; });
+            var ids = this.picks.map(function (p) { return p.variantId; })
+              .concat(giftsIn.map(function (g) { return g.variantId; }));
+            var props = { _bundle_items: ids.join(',') };
+            this.picks.forEach(function (p, i) {
+              props['Flakon ' + (i + 1)] = p.title + ' Inspiracja: ' + (p.inspiration || '') + ' - ' + (p.variantTitle || '');
+            });
+            giftsIn.forEach(function (g, i) { props['Gratis ' + (i + 1)] = g.title; });
+            items.push({ id: tier.setVariantId, quantity: 1, properties: props });
+          } else {
+            this.picks.forEach(function (p) {
+              items.push({ id: p.variantId, quantity: 1, properties: { 'Bundle Fragrance': p.title } });
+            });
+          }
+          this.cfg.gifts.forEach(function (g) {
+            if (!tier.setVariantId && g.variantId && tier.unlock && tier.unlock[g.key]) {
+              items.push({ id: g.variantId, quantity: 1, properties: { Zestaw: label } });
+            }
+          });
+          var root = (window.Shopify && window.Shopify.routes && window.Shopify.routes.root) || '/';
+          var codes = String(tier.codes || '').split(',').map(function (c) { return c.trim(); }).filter(Boolean).join(',');
+          var redirect = this.cfg.redirect ? root + 'checkout' : root + 'cart';
+          var self = this;
+          function post(url, body) {
+            return fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify(body)
+            }).then(function (res) {
+              if (!res.ok) throw new Error('cart request failed');
+              return res.json();
+            });
+          }
+          post(root + 'cart/add.js', { items: items })
+            .then(function () { return codes ? post(root + 'cart/update.js', { discount: codes }) : null; })
+            .then(function () { window.location.href = redirect; })
+            .catch(function () {
+              self.busy = false;
+              self.error = 'Coś poszło nie tak, spróbuj ponownie';
+            });
+        }
+      };
+    }
+
+    function register() { window.Alpine.data('mgxBundleOffer', factory); }
+    if (window.Alpine && window.Alpine.data) {
+      register();
+    } else {
+      document.addEventListener('alpine:init', register);
+    }
+
+    // Load Alpine once, after parsing: by then every deferred Alpine from another section has already run.
+    function loadAlpine() {
+      if (window.Alpine || document.querySelector('script[data-mgx-alpine]')) return;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js';
+      s.setAttribute('data-mgx-alpine', '');
+      document.head.appendChild(s);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadAlpine);
+    } else {
+      loadAlpine();
+    }
+  })();
+</script>
+
+<script type="application/json" id="MgxBoData-{{ section.id }}">
+  {
+    "currency": {{ cart.currency.iso_code | default: shop.currency | json }},
+    "base": {{ base_price }},
+    "ml": {{ ml_label | json }},
+    "defaultIndex": {{ default_index }},
+    "redirect": {{ st.checkout_redirect | json }},
+    "atcLabel": {{ st.atc_label | default: 'Przejdź do kasy' | json }},
+    "atcIncomplete": {{ st.atc_incomplete_label | default: 'Wybierz jeszcze [n]' | json }},
+    "tiers": [
+      {%- for t in tier_blocks -%}
+        {
+          "label": {{ t.settings.label | json }},
+          "paid": {{ t.settings.paid | default: 1 | plus: 0 | at_least: 0 }},
+          "free": {{ t.settings.free | default: 0 | plus: 0 | at_least: 0 }},
+          "codes": {{ t.settings.discount_codes | default: '' | json }},
+          {%- assign bv = t.settings.bundle_product.selected_or_first_available_variant -%}
+          "setVariantId": {% if bv and bv.available %}{{ bv.id }}{% else %}null{% endif %},
+          "setPrice": {% if bv %}{{ bv.price }}{% else %}null{% endif %},
+          "setCompare": {% if bv and bv.compare_at_price > bv.price %}{{ bv.compare_at_price }}{% else %}null{% endif %},
+          "unlock": {
+            "shipping": {{ t.settings.unlock_shipping | json }},
+            "box": {{ t.settings.unlock_box | json }},
+            "perfume": {{ t.settings.unlock_perfume | json }}
+          }
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ],
+    "gifts": [
+      {%- for g in gift_blocks -%}
+        {%- assign gv = g.settings.product.selected_or_first_available_variant -%}
+        {
+          "key": {{ g.settings.key | json }},
+          "title": {{ g.settings.title | json }},
+          "price": {% if gv %}{{ gv.price }}{% elsif g.settings.list_price %}{{ g.settings.list_price | times: 100 | round }}{% else %}0{% endif %},
+          "variantId": {% if gv and gv.available %}{{ gv.id }}{% else %}null{% endif %}
+        }{%- unless forloop.last -%},{%- endunless -%}
+      {%- endfor -%}
+    ],
+    "products": {% if has_products %}{{ products_json }}{% else %}[]{% endif %}
+  }
+</script>
+
+<div
+  id="mgx-offer"
+  class="mgx-bo mgx-text"
+  x-data="mgxBundleOffer('MgxBoData-{{ section.id }}')"
+  data-section-id="{{ section.id }}">
+  {%- comment -%} countdown as a solid bar above the photo (magyx.co top-bar layout) {%- endcomment -%}
+  {%- render 'mgx-bundle-offer-countdown',
+    enabled: st.countdown_enabled,
+    end: st.countdown_end,
+    label: st.countdown_label,
+    expired: st.countdown_expired,
+    eyebrow: st.countdown_eyebrow,
+    deal: st.countdown_deal,
+    offer_bg: st.countdown_offer_bg,
+    timer_bg: st.countdown_timer_bg
+  -%}
+  <div class="mgx-bo__wrap">
+    {%- comment -%} ---------- gallery ---------- {%- endcomment -%}
+    <div class="mgx-bo__gallery">
+      <div class="mgx-bo__gallery-sticky">
+        <div class="mgx-bo__track" x-ref="track" @scroll.debounce.80ms="onTrackScroll()">
+          {%- assign slide_total = 0 -%}
+          {%- assign extra_total = 0 -%}
+          {%- for t in tier_blocks -%}
+            {%- comment -%} set photo: block image, else the set product's main photo {%- endcomment -%}
+            {%- assign t_img = t.settings.image | default: t.settings.bundle_product.featured_image -%}
+            {%- if t_img != blank -%}
+              {%- assign slide_total = slide_total | plus: 1 -%}
+              <div
+                class="mgx-bo__slide"
+                id="MgxBoSlideT{{ forloop.index0 }}-{{ section.id }}"
+                data-slide
+                x-show="tierIndex === {{ forloop.index0 }}"
+                {% unless forloop.index0 == default_index %}x-cloak{% endunless %}>
+                {%- liquid
+                  if forloop.index0 == default_index
+                    assign img_loading = 'eager'
+                  else
+                    assign img_loading = 'lazy'
+                  endif
+                -%}
+                {{
+                  t_img
+                  | image_url: width: 1400
+                  | image_tag:
+                    widths: '375, 550, 750, 1100, 1400',
+                    sizes: '(min-width: 900px) 50vw, 100vw',
+                    loading: img_loading,
+                    class: 'mgx-bo__img',
+                    alt: t.settings.label
+                }}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- for i in (1..5) -%}
+            {%- liquid
+              assign key = 'image_' | append: i
+              assign img = st[key]
+            -%}
+            {%- if img != blank -%}
+              {%- assign slide_total = slide_total | plus: 1 -%}
+              {%- assign extra_total = extra_total | plus: 1 -%}
+              <div class="mgx-bo__slide" id="MgxBoSlide{{ i }}-{{ section.id }}" data-slide>
+                {%- liquid
+                  if slide_total == 1
+                    assign img_loading = 'eager'
+                  else
+                    assign img_loading = 'lazy'
+                  endif
+                -%}
+                {{
+                  img
+                  | image_url: width: 1400
+                  | image_tag:
+                    widths: '375, 550, 750, 1100, 1400',
+                    sizes: '(min-width: 900px) 50vw, 100vw',
+                    loading: img_loading,
+                    class: 'mgx-bo__img'
+                }}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if slide_total == 0 -%}
+            <div class="mgx-bo__slide mgx-bo__slide--placeholder">
+              {{ 'product-1' | placeholder_svg_tag: 'mgx-bo__placeholder' }}
+            </div>
+          {%- endif -%}
+        </div>
+
+        {%- comment -%} only one set photo shows at a time, so thumbs only help when extra photos exist {%- endcomment -%}
+        {%- if extra_total > 0 and slide_total > 1 -%}
+          <div class="mgx-bo__thumbs">
+            {%- for t in tier_blocks -%}
+              {%- assign t_img = t.settings.image | default: t.settings.bundle_product.featured_image -%}
+              {%- if t_img != blank -%}
+                {%- capture slide_id -%}MgxBoSlideT{{ forloop.index0 }}-{{ section.id }}{%- endcapture -%}
+                <button
+                  type="button"
+                  class="mgx-bo__thumb"
+                  x-show="tierIndex === {{ forloop.index0 }}"
+                  {% unless forloop.index0 == default_index %}x-cloak{% endunless %}
+                  :class="{ 'is-active': activeSlide === '{{ slide_id }}' }"
+                  @click="goTo('{{ slide_id }}')"
+                  aria-label="Pokaż zdjęcie {{ t.settings.label | escape }}">
+                  {{ t_img | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
+                </button>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- for i in (1..5) -%}
+              {%- liquid
+                assign key = 'image_' | append: i
+                assign img = st[key]
+              -%}
+              {%- if img != blank -%}
+                {%- capture slide_id -%}MgxBoSlide{{ i }}-{{ section.id }}{%- endcapture -%}
+                <button
+                  type="button"
+                  class="mgx-bo__thumb"
+                  :class="{ 'is-active': activeSlide === '{{ slide_id }}' }"
+                  @click="goTo('{{ slide_id }}')"
+                  aria-label="Pokaż zdjęcie {{ i }}">
+                  {{ img | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
+                </button>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- comment -%} ---------- buy box ---------- {%- endcomment -%}
+    <div class="mgx-bo__box">
+      {%- liquid
+        # [rating] / [count] read the store-wide totals from the theme review data (snippets/pm-review-stats)
+        capture jm_rating
+          render 'pm-review-stats', mode: 'store_avg'
+        endcapture
+        capture jm_count
+          render 'pm-review-stats', mode: 'store_count'
+        endcapture
+        assign jm_rating = jm_rating | strip
+        assign jm_count = jm_count | strip
+        assign rating_line = st.rating_text
+        if rating_line contains '[rating]' or rating_line contains '[count]'
+          if jm_rating != blank and jm_count != blank
+            assign jm_rating_fmt = jm_rating | plus: 0 | round: 1 | append: '' | replace: '.', ','
+            assign jm_count_n = jm_count | plus: 0
+            assign jm_count_fmt = jm_count_n | append: ''
+            if jm_count_n >= 1000
+              assign jm_thousands = jm_count_n | divided_by: 1000
+              assign jm_rest = jm_count_n | modulo: 1000 | prepend: '00' | slice: -3, 3
+              assign jm_count_fmt = jm_thousands | append: '&nbsp;' | append: jm_rest
+            endif
+            assign rating_line = rating_line | replace: '[rating]', jm_rating_fmt | replace: '[count]', jm_count_fmt
+          else
+            assign rating_line = st.rating_fallback
+          endif
+        endif
+      -%}
+      {%- if rating_line != blank -%}
+        <a class="mgx-bo__rating" href="#mgx-reviews" @click.prevent="scrollToReviews()" aria-label="{{ rating_line | strip_html | escape }}, przejdź do opinii">
+          <span class="mgx-bo__stars mgx-star" aria-hidden="true">
+            {%- for i in (1..5) -%}
+              <svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M10 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6L10 15l-5.4 3 1.2-6L1.3 7.8l6.1-.7z"/></svg>
+            {%- endfor -%}
+          </span>
+          <span class="mgx-bo__rating-text">{{ rating_line }}</span>
+        </a>
+      {%- endif -%}
+
+      {%- if st.heading != blank -%}
+        <h1 class="mgx-bo__heading">{{ st.heading }}</h1>
+      {%- endif -%}
+
+      {%- if st.benefits != blank -%}
+        {%- render 'mgx-bundle-offer-benefits', benefits: st.benefits -%}
+      {%- endif -%}
+
+      {%- comment -%} tiers {%- endcomment -%}
+      {%- if tier_count > 0 -%}
+        <div class="mgx-bo__block">
+          {%- if st.tiers_heading != blank -%}
+            <h2 class="mgx-bo__label">{{ st.tiers_heading }}</h2>
+          {%- endif -%}
+          <div class="mgx-bo__tiers" style="--mgx-bo-cols: {{ tier_count }};">
+            {%- for t in tier_blocks -%}
+              {%- liquid
+                assign t_paid = t.settings.paid | default: 1 | plus: 0 | at_least: 0
+                assign t_free = t.settings.free | default: 0 | plus: 0 | at_least: 0
+                assign t_n = t_paid | plus: t_free
+                assign t_total = base_price | times: t_paid
+                assign t_per = 0
+                assign t_save = 0
+                if t_n > 0
+                  assign t_per = t_total | times: 1.0 | divided_by: t_n | round
+                  assign t_save = t_free | times: 100.0 | divided_by: t_n | round
+                endif
+                comment
+                  full value = bottles at full price + list value of every bonus this tier unlocks (same as the JS)
+                endcomment
+                assign t_gv = 0
+                for g in gift_blocks
+                  assign g_unlock = 'unlock_' | append: g.settings.key
+                  if t.settings[g_unlock]
+                    if g.settings.product != blank
+                      assign t_gv = t_gv | plus: g.settings.product.selected_or_first_available_variant.price
+                    elsif g.settings.list_price
+                      assign g_lp = g.settings.list_price | times: 100 | round
+                      assign t_gv = t_gv | plus: g_lp
+                    endif
+                  endif
+                endfor
+                assign t_full = base_price | times: t_n | plus: t_gv
+                assign t_pay = t_total
+                assign t_set = t.settings.bundle_product.selected_or_first_available_variant
+                if t_set
+                  assign t_pay = t_set.price
+                endif
+                assign t_bottles = t_n
+                if t.settings.unlock_perfume
+                  for g in gift_blocks
+                    if g.settings.key == 'perfume'
+                      assign t_bottles = t_n | plus: 1
+                    endif
+                  endfor
+                endif
+                if t_bottles > 0
+                  assign t_per = t_pay | times: 1.0 | divided_by: t_bottles | round
+                endif
+                assign t_save = 0
+                if t_full > t_pay
+                  assign t_save = t_full | minus: t_pay | times: 100.0 | divided_by: t_full | round
+                endif
+                assign is_default = false
+                if forloop.index0 == default_index
+                  assign is_default = true
+                endif
+              -%}
+              <button
+                type="button"
+                class="mgx-bo__tier{% if is_default %} is-selected{% endif %}{% if t.settings.badge != blank %} has-badge{% endif %}"
+                :class="{ 'is-selected': tierIndex === {{ forloop.index0 }} }"
+                aria-pressed="{% if is_default %}true{% else %}false{% endif %}"
+                :aria-pressed="tierIndex === {{ forloop.index0 }} ? 'true' : 'false'"
+                @click="selectTier({{ forloop.index0 }})"
+                {{ t.shopify_attributes }}>
+                {%- if t.settings.badge != blank -%}
+                  <span class="mgx-bo__tier-badge mgx-badge-amber">{{ t.settings.badge }}</span>
+                {%- endif -%}
+                {%- comment -%} card photo: block image, else the set product's main photo, else the bottle drawing {%- endcomment -%}
+                {%- assign t_card_img = t.settings.image | default: t.settings.bundle_product.featured_image -%}
+                <span class="mgx-bo__tier-card{% if t_card_img != blank %} has-photo{% endif %}">
+                  <span class="mgx-bo__tier-check" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" width="10" height="10" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  {%- if t_save > 0 -%}
+                    <span class="mgx-bo__tier-save mgx-badge-amber">-{{ t_save }}%</span>
+                  {%- endif -%}
+                  {%- if t_card_img != blank -%}
+                    {{ t_card_img | image_url: width: 400 | image_tag: loading: 'lazy', class: 'mgx-bo__tier-img', alt: t.settings.label }}
+                  {%- else -%}
+                    {%- comment -%} default visual: one bottle per item, free ones marked {%- endcomment -%}
+                    {%- assign t_show = t_n | at_most: 8 -%}
+                    <span class="mgx-bo__tier-stack{% if t_show > 3 %} is-dense{% endif %}" aria-hidden="true">
+                      {%- for i in (1..t_show) -%}
+                        {%- comment -%} MagyX flacon: tall silver cap, short collar, square glass body, dark label {%- endcomment -%}
+                        <svg class="mgx-bo__bottle{% if i > t_paid %} is-free{% endif %}" viewBox="0 0 24 46" focusable="false"><rect class="mgx-bo__bottle-cap" x="6" y="0.5" width="12" height="13" rx="1.5"/><rect class="mgx-bo__bottle-collar" x="8" y="13.5" width="8" height="2.5"/><rect class="mgx-bo__bottle-body" x="1" y="16" width="22" height="29.5" rx="2.5"/><rect class="mgx-bo__bottle-label" x="5" y="22" width="14" height="17" rx="0.8"/><rect class="mgx-bo__bottle-mark" x="8" y="27" width="8" height="1.6" rx="0.8"/></svg>
+                      {%- endfor -%}
+                    </span>
+                  {%- endif -%}
+                  {%- comment -%} gifts this tier unlocks that are real products: store photo as a small "+" thumbnail {%- endcomment -%}
+                  {%- capture t_gifts -%}
+                    {%- for g in gift_blocks -%}
+                      {%- assign g_unlock = 'unlock_' | append: g.settings.key -%}
+                      {%- if t.settings[g_unlock] and g.settings.product != blank -%}
+                        {%- assign g_img = g.settings.image | default: g.settings.product.featured_image -%}
+                        {%- if g_img != blank -%}
+                          <span class="mgx-bo__tier-gift">{{ g_img | image_url: width: 120 | image_tag: loading: 'lazy', alt: g.settings.title }}</span>
+                        {%- endif -%}
+                      {%- endif -%}
+                    {%- endfor -%}
+                  {%- endcapture -%}
+                  {%- if t_gifts != blank -%}
+                    <span class="mgx-bo__tier-gifts"><span class="mgx-bo__tier-plus" aria-hidden="true">+</span>{{ t_gifts }}</span>
+                  {%- endif -%}
+                </span>
+                <span class="mgx-bo__tier-name">{{ t.settings.label }}</span>
+                <span class="mgx-bo__tier-per">
+                  <span x-text="money(tierPer(cfg.tiers[{{ forloop.index0 }}], {{ forloop.index0 }}))">{{ t_per | money }}</span> / flakon
+                </span>
+              </button>
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} slots + ATC {%- endcomment -%}
+      {%- if has_products and tier_count > 0 -%}
+        <div class="mgx-bo__block">
+          <div class="mgx-bo__slots-head">
+            {%- if st.slots_heading != blank -%}
+              <h2 class="mgx-bo__label">{{ st.slots_heading }}</h2>
+            {%- endif -%}
+            <span class="mgx-bo__counter" x-cloak x-text="'Wybrano ' + picks.length + '/' + size"></span>
+          </div>
+          <div class="mgx-bo__slots" x-cloak :style="'--mgx-bo-cols:' + size">
+            <template x-for="s in slots" :key="s.i">
+              <div class="mgx-bo__slot" :class="{ 'is-filled': s.p, 'is-free': s.free }">
+                <template x-if="s.free">
+                  <span class="mgx-bo__slot-free mgx-badge-amber">GRATIS</span>
+                </template>
+                <template x-if="!s.p">
+                  <button type="button" class="mgx-bo__slot-empty" @click="openPicker()">
+                    <span class="mgx-bo__slot-plus" aria-hidden="true">+</span>
+                    <span>Wybierz</span>
+                  </button>
+                </template>
+                <template x-if="s.p">
+                  <div class="mgx-bo__slot-card">
+                    <div class="mgx-bo__slot-media">
+                      <img x-show="s.p.image" :src="s.p.image" :alt="s.p.title" width="300" height="300" loading="lazy">
+                    </div>
+                    <span class="mgx-bo__slot-title" x-text="s.p.title"></span>
+                    <button
+                      type="button"
+                      class="mgx-bo__slot-remove"
+                      @click="removeAt(s.i)"
+                      :aria-label="'Usuń ' + s.p.title">
+                      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+          <button type="button" class="mgx-bo__pick-btn" @click="openPicker()" x-show="!complete" x-cloak>
+            {{ st.slots_heading | default: 'Wybierz zapachy' }}
+          </button>
+          <p class="mgx-bo__note">
+            Pojemność flakonu: {{ ml_label }}.
+          </p>
+        </div>
+
+        {%- comment -%} price comparison for the selected tier {%- endcomment -%}
+        {%- liquid
+          assign d_paid = default_tier.settings.paid | default: 1 | plus: 0
+          assign d_free = default_tier.settings.free | default: 0 | plus: 0
+          assign d_cnt = d_paid | plus: d_free
+          assign d_total0 = base_price | times: d_paid
+          assign d_struck0 = base_price | times: d_cnt
+          assign d_save0 = 0
+          if d_cnt > 0
+            assign d_save0 = d_free | times: 100.0 | divided_by: d_cnt | round
+          endif
+        -%}
+        <div class="mgx-bo__block">
+          <div class="mgx-bo__sum">
+            <div class="mgx-bo__sum-head">
+              <span class="mgx-bo__sum-name" x-text="tier.label">{{ default_tier.settings.label }}</span>
+              <span class="mgx-bo__sum-prices">
+                <span class="mgx-bo__sum-total" x-text="money(tierTotal(tier, tierIndex))">{{ d_total0 | money }}</span>
+                <s class="mgx-bo__sum-struck" x-show="tierStruck(tier, tierIndex) > tierTotal(tier, tierIndex)" x-text="money(tierStruck(tier, tierIndex))">{{ d_struck0 | money }}</s>
+              </span>
+            </div>
+            <span class="mgx-bo__sum-save mgx-badge-amber"{% if d_save0 == 0 %} style="display: none;"{% endif %} x-show="tierSaved(tier, tierIndex) > 0" x-text="'Oszczędzasz ' + money(tierSaved(tier, tierIndex)) + ' (' + tierSavings(tier, tierIndex) + '%)'">Oszczędzasz {{ d_save0 }}%</span>
+            <ul class="mgx-bo__sum-list" role="list" x-cloak>
+              <template x-for="line in summaryLines" :key="line.label">
+                <li>
+                  <span class="mgx-bo__sum-label" x-text="line.label"></span>
+                  <span class="mgx-bo__sum-value">
+                    <s x-show="line.free && line.value" x-text="line.value"></s>
+                    <span x-show="!line.free" x-text="line.value"></span>
+                    <span class="mgx-bo__sum-free" x-show="line.free">GRATIS</span>
+                  </span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </div>
+
+        {%- comment -%} gifts {%- endcomment -%}
+        {%- if gift_blocks.size > 0 -%}
+          <div class="mgx-bo__block">
+            {%- if st.gifts_heading != blank -%}
+              <h2 class="mgx-bo__label">{{ st.gifts_heading }}</h2>
+            {%- endif -%}
+            <div class="mgx-bo__gifts">
+              {%- for g in gift_blocks -%}
+                {%- liquid
+                  assign gkey = g.settings.key | default: 'shipping'
+                  assign unlock_key = 'unlock_' | append: gkey
+                  assign g_on = false
+                  if default_tier and default_tier.settings[unlock_key]
+                    assign g_on = true
+                  endif
+                  assign g_img = g.settings.image
+                  if g_img == blank and g.settings.product != blank
+                    assign g_img = g.settings.product.featured_image
+                  endif
+                  assign g_value = g.settings.value_label
+                  if g_value == blank and g.settings.product != blank
+                    assign g_value = g.settings.product.price | money | replace: ' ', '&nbsp;' | prepend: 'o wartości '
+                  elsif g_value == blank and g.settings.list_price
+                    assign g_value = g.settings.list_price | times: 100 | round | money | replace: ' ', '&nbsp;' | prepend: 'o wartości '
+                  endif
+                -%}
+                {%- unless forloop.first -%}
+                  <span class="mgx-bo__plus" aria-hidden="true">+</span>
+                {%- endunless -%}
+                <div
+                  class="mgx-bo__gift{% unless g_on %} is-locked{% endunless %}"
+                  :class="{ 'is-locked': !giftUnlocked({{ gkey | json | escape }}) }"
+                  {{ g.shopify_attributes }}>
+                  <div class="mgx-bo__gift-media">
+                    {%- if g_img != blank -%}
+                      {{ g_img | image_url: width: 300 | image_tag: loading: 'lazy', class: 'mgx-bo__gift-img', alt: g.settings.title }}
+                    {%- elsif gkey == 'shipping' -%}
+                      <span class="mgx-bo__gift-icon" aria-hidden="true">{{ 'icon-truck.svg' | inline_asset_content }}</span>
+                    {%- else -%}
+                      <span class="mgx-bo__gift-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><path d="M20 7h-2.2A3 3 0 0012 3.9 3 3 0 006.2 7H4a1 1 0 00-1 1v3a1 1 0 001 1h1v8a1 1 0 001 1h12a1 1 0 001-1v-8h1a1 1 0 001-1V8a1 1 0 00-1-1zm-6-2a1 1 0 110 2h-1V6a1 1 0 011-1zM9 5a1 1 0 011 1v1H9a1 1 0 010-2zM5 9h6v1H5zm2 3h4v7H7zm10 7h-4v-7h4zm2-9h-6V9h6z" fill="currentColor"/></svg>
+                      </span>
+                    {%- endif -%}
+                    <span class="mgx-bo__gift-lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><path d="M17 10V8a5 5 0 00-10 0v2H6a1 1 0 00-1 1v9a1 1 0 001 1h12a1 1 0 001-1v-9a1 1 0 00-1-1zm-8-2a3 3 0 016 0v2H9z" fill="currentColor"/></svg>
+                    </span>
+                    <span class="mgx-bo__gift-ok" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" width="10" height="10" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                  </div>
+                  <span class="mgx-bo__gift-title">{{ g.settings.title }}</span>
+                  {%- if g_value != blank -%}
+                    <span class="mgx-bo__gift-value">{{ g_value }}</span>
+                  {%- endif -%}
+                  <span class="mgx-bo__gift-caption" x-text="giftCaption({{ gkey | json | escape }})"></span>
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        {%- endif -%}
+
+
+        <div class="mgx-bo__block mgx-bo__block--atc">
+          <button
+            type="button"
+            class="mgx-bo__atc mgx-btn-primary"
+            x-ref="atc"
+            :class="{ 'is-incomplete': !complete, 'is-busy': busy }"
+            :aria-busy="busy ? 'true' : 'false'"
+            @click="submit()">
+            <span class="mgx-bo__spinner" x-show="busy" x-cloak aria-hidden="true"></span>
+            {%- liquid
+              assign d_n = default_tier.settings.paid | default: 1 | plus: 0
+              assign d_free = default_tier.settings.free | default: 0 | plus: 0
+              assign d_n = d_n | plus: d_free
+              assign m10 = d_n | modulo: 10
+              assign m100 = d_n | modulo: 100
+              assign d_word = 'zapachów'
+              if d_n == 1
+                assign d_word = 'zapach'
+              elsif m10 >= 2 and m10 <= 4
+                if m100 < 12 or m100 > 14
+                  assign d_word = 'zapachy'
+                endif
+              endif
+              assign d_need = d_n | append: ' ' | append: d_word
+              assign atc_initial = st.atc_incomplete_label | default: 'Wybierz jeszcze [n]' | replace: '[n]', d_need
+            -%}
+            <span x-text="busy ? 'Dodawanie do koszyka…' : atcText">{{ atc_initial }}</span>
+          </button>
+          <p class="mgx-bo__error" role="alert" x-show="error" x-cloak x-text="error"></p>
+        </div>
+      {%- elsif tier_count > 0 -%}
+        <p class="mgx-bo__empty">
+          {%- if coll == blank -%}
+            Wybierz kolekcję w ustawieniach sekcji
+          {%- else -%}
+            Brak dostępnych zapachów o pojemności {{ ml_label }} w wybranej kolekcji.
+          {%- endif -%}
+        </p>
+      {%- endif -%}
+
+      {%- if st.show_shipping_badges -%}
+        <div class="mgx-bo__badges">{% render 'shipping-badges', guarantee_text: st.guarantee_text, delivery_text: st.delivery_text %}</div>
+      {%- endif -%}
+      {%- if st.show_payment_strip -%}
+        <div class="mgx-bo__payments">
+          <img
+            src="{{ 'payment-badge.svg' | asset_url }}"
+            alt="{{ 'sections.footer.payment' | t }}"
+            width="400"
+            height="40"
+            loading="lazy">
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- if has_products -%}
+    {% render 'mgx-bundle-offer-picker', section_id: section.id, ml_label: ml_label %}
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Zestaw – oferta",
+  "class": "mgx-bundle-offer",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Zapachy"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Kolekcja zapachów",
+      "info": "Automatyczne rabaty 2+1 i 3+2 działają tylko dla kolekcji top-sellers."
+    },
+    {
+      "type": "text",
+      "id": "variant_ml",
+      "label": "Pojemność flakonu (ml)",
+      "default": "50",
+      "info": "Dopasowanie do wariantu, np. 50 = 50ml / 50 ml"
+    },
+    {
+      "type": "number",
+      "id": "max_products",
+      "label": "Maks. liczba zapachów z kolekcji",
+      "default": 120,
+      "info": "Od 1 do 250"
+    },
+    {
+      "type": "header",
+      "content": "Nagłówek"
+    },
+    {
+      "type": "text",
+      "id": "rating_text",
+      "label": "Ocena (obok 5 gwiazdek)",
+      "default": "[rating]/5 · [count] opinii klientów",
+      "info": "[rating] i [count] = ocena i liczba opinii z Judge.me, aktualizowane automatycznie"
+    },
+    {
+      "type": "text",
+      "id": "rating_fallback",
+      "label": "Ocena, gdy brak danych Judge.me"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Nagłówek",
+      "default": "Stwórz swój zestaw perfum"
+    },
+    {
+      "type": "richtext",
+      "id": "benefits",
+      "label": "Korzyści (jedna linia = jeden akapit)",
+      "default": "<p>✨ 20% olejków zapachowych, trwałość na cały dzień</p><p>🎁 Darmowe zapachy w większych zestawach</p><p>🚚 Wysyłka w 48 godzin z InPost</p>"
+    },
+    {
+      "type": "header",
+      "content": "Galeria"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_1",
+      "label": "Zdjęcie 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_2",
+      "label": "Zdjęcie 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_3",
+      "label": "Zdjęcie 3"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_4",
+      "label": "Zdjęcie 4"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_5",
+      "label": "Zdjęcie 5"
+    },
+    {
+      "type": "header",
+      "content": "Licznik czasu"
+    },
+    {
+      "type": "checkbox",
+      "id": "countdown_enabled",
+      "label": "Pokaż licznik",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "countdown_end",
+      "label": "Koniec oferty",
+      "info": "Czas polski. Format: 2026-10-31 23:59 (albo sama data 2026-10-31 = do 23:59:59)."
+    },
+    {
+      "type": "text",
+      "id": "countdown_label",
+      "label": "Tekst nad licznikiem",
+      "default": "Oferta kończy się za:"
+    },
+    {
+      "type": "text",
+      "id": "countdown_expired",
+      "label": "Tekst po zakończeniu",
+      "info": "Puste = licznik znika po zakończeniu oferty."
+    },
+    {
+      "type": "text",
+      "id": "countdown_eyebrow",
+      "label": "Pasek: nazwa promocji",
+      "info": "Lewa część paska nad zdjęciem, np. Promocja Halloween.",
+      "default": "Promocja Halloween"
+    },
+    {
+      "type": "text",
+      "id": "countdown_deal",
+      "label": "Pasek: oferta",
+      "info": "Pogrubiony tekst obok nazwy promocji.",
+      "default": "Do -51% i gratisy"
+    },
+    {
+      "type": "color",
+      "id": "countdown_offer_bg",
+      "label": "Pasek: tło oferty",
+      "default": "#184031"
+    },
+    {
+      "type": "color",
+      "id": "countdown_timer_bg",
+      "label": "Pasek: tło licznika",
+      "default": "#100F0D"
+    },
+    {
+      "type": "header",
+      "content": "Teksty"
+    },
+    {
+      "type": "text",
+      "id": "tiers_heading",
+      "label": "Nagłówek zestawów",
+      "default": "Wybierz zestaw"
+    },
+    {
+      "type": "text",
+      "id": "gifts_heading",
+      "label": "Nagłówek gratisów",
+      "default": "Gratisy do Twojego zamówienia"
+    },
+    {
+      "type": "text",
+      "id": "slots_heading",
+      "label": "Nagłówek wyboru zapachów",
+      "default": "Wybierz zapachy"
+    },
+    {
+      "type": "text",
+      "id": "atc_label",
+      "label": "Przycisk (zestaw gotowy)",
+      "default": "Przejdź do kasy"
+    },
+    {
+      "type": "text",
+      "id": "atc_incomplete_label",
+      "label": "Przycisk (brakuje zapachów)",
+      "default": "Wybierz jeszcze [n]",
+      "info": "[n] = liczba brakujących zapachów"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shipping_badges",
+      "label": "Pokaż odznaki wysyłki",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "delivery_text",
+      "label": "Tekst dostawy",
+      "default": "Dostawa w 1-3 dni robocze"
+    },
+    {
+      "type": "text",
+      "id": "guarantee_text",
+      "label": "Tekst gwarancji",
+      "default": "Do 60 dni na zwrot pieniędzy"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_strip",
+      "label": "Pokaż metody płatności",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "checkout_redirect",
+      "label": "Przejdź od razu do kasy",
+      "default": true,
+      "info": "Wyłączone: przejście do koszyka"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tier",
+      "name": "Zestaw",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Nazwa",
+          "default": "2+1 GRATIS"
+        },
+        {
+          "type": "number",
+          "id": "paid",
+          "label": "Płatne flakony",
+          "default": 1
+        },
+        {
+          "type": "number",
+          "id": "free",
+          "label": "Darmowe flakony",
+          "default": 0
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Odznaka"
+        },
+        {
+          "type": "checkbox",
+          "id": "default_selected",
+          "label": "Zaznaczony domyślnie",
+          "default": false
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Zdjęcie zestawu",
+          "info": "Pierwsze zdjęcie galerii, gdy zestaw jest wybrany"
+        },
+        {
+          "type": "checkbox",
+          "id": "unlock_shipping",
+          "label": "Odblokowuje darmową wysyłkę",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "unlock_box",
+          "label": "Odblokowuje Mystery Box",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "unlock_perfume",
+          "label": "Odblokowuje perfum gratis",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "discount_codes",
+          "label": "Kody rabatowe",
+          "info": "Kody stosowane automatycznie przy przejściu do kasy"
+        },
+        {
+          "type": "product",
+          "id": "bundle_product",
+          "label": "Produkt zestawu",
+          "info": "Dodawany jako osobna linia w koszyku (obok flakonów). Do niego przypisujesz kody i rabaty."
+        }
+      ]
+    },
+    {
+      "type": "gift",
+      "name": "Gratis",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "key",
+          "label": "Rodzaj",
+          "options": [
+            {
+              "value": "shipping",
+              "label": "Darmowa wysyłka"
+            },
+            {
+              "value": "box",
+              "label": "Mystery Box"
+            },
+            {
+              "value": "perfume",
+              "label": "Perfum gratis"
+            }
+          ],
+          "default": "shipping"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Tytuł",
+          "default": "Darmowa wysyłka"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Zdjęcie"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Produkt gratis",
+          "info": "Puste = sam benefit, np. darmowa wysyłka"
+        },
+        {
+          "type": "number",
+          "id": "list_price",
+          "label": "Cena katalogowa (zł)",
+          "info": "Dla gratisu bez produktu, np. wysyłka 14.99. Pokazana jako przekreślona"
+        },
+        {
+          "type": "text",
+          "id": "value_label",
+          "label": "Wartość",
+          "info": "Np. o wartości 59,99 zł. Puste: cena produktu"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Zestaw – oferta",
+      "blocks": [
+        {
+          "type": "tier",
+          "settings": {
+            "label": "1 flakon",
+            "paid": 1,
+            "free": 0
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "label": "2+1 GRATIS",
+            "paid": 2,
+            "free": 1,
+            "badge": "Najczęściej wybierany",
+            "default_selected": true,
+            "unlock_shipping": true
+          }
+        },
+        {
+          "type": "tier",
+          "settings": {
+            "label": "5 + bonusy",
+            "paid": 3,
+            "free": 2,
+            "badge": "Najlepsza oferta",
+            "unlock_shipping": true,
+            "unlock_box": true,
+            "unlock_perfume": true
+          }
+        },
+        {
+          "type": "gift",
+          "settings": {
+            "key": "shipping",
+            "title": "Darmowa wysyłka"
+          }
+        },
+        {
+          "type": "gift",
+          "settings": {
+            "key": "box",
+            "title": "Mystery Beauty Box"
+          }
+        },
+        {
+          "type": "gift",
+          "settings": {
+            "key": "perfume",
+            "title": "Perfum Niespodzianka 50 ml"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,191 @@
+{% comment %}
+  Renders the header drawer menu for mobile and desktop.
+
+  Usage:
+  {% render 'header-drawer' %}
+
+  Premium (WP-B, port of the FM drawer): left drawer, 100% / 400px, logo + close in the head, level-1 rows 56px
+  with hairlines, level-2 rows 44px expanding in place, foot with Search + country / language selectors.
+  Built from the header's menu (main-menu) as before, so every link keeps its polish-store-text rendering.
+  Dawn's header-drawer / menu-drawer JS contract is kept:
+  header-drawer > details#Details-menu-drawer-container.menu-drawer-container > summary.header__icon--menu + #menu-drawer.menu-drawer.
+{% endcomment %}
+
+{%- liquid
+  assign drawer_logo_alt = settings.logo.alt | default: shop.name | escape
+-%}
+
+<header-drawer data-breakpoint="{% if section.settings.menu_type_desktop == 'drawer' %}desktop{% else %}tablet{% endif %}">
+  <details id="Details-menu-drawer-container" class="menu-drawer-container">
+    <summary
+      class="header__icon header__icon--menu header__icon--summary link focus-inset"
+      aria-label="{{ 'sections.header.menu' | t }}"
+    >
+      <span>
+        {%- render 'pm-icon', icon: 'menu', size: 24, stroke: 1.5, class: 'icon icon-hamburger' -%}
+        {%- render 'pm-icon', icon: 'close', size: 24, stroke: 1.5, class: 'icon icon-close' -%}
+      </span>
+    </summary>
+    <div id="menu-drawer" class="gradient menu-drawer motion-reduce color-{{ section.settings.menu_color_scheme }} pm-drawer">
+      <div class="menu-drawer__inner-container pm-drawer__inner">
+        <div class="pm-drawer__head">
+          <a href="{{ routes.root_url }}" class="pm-drawer__logo" aria-label="{{ shop.name | escape }}">
+            {%- if settings.logo != blank -%}
+              {{
+                settings.logo
+                | image_url: width: 480
+                | image_tag:
+                  class: 'pm-drawer__logo-img',
+                  widths: '120, 180, 240, 360, 480',
+                  sizes: '120px',
+                  alt: drawer_logo_alt,
+                  loading: 'lazy'
+              }}
+            {%- else -%}
+              <span class="pm-drawer__logo-text">{{ shop.name }}</span>
+            {%- endif -%}
+          </a>
+          <button type="button" class="pm-drawer__close" aria-label="{{ 'premium.general.close' | t }}">
+            {%- render 'pm-icon', icon: 'close', size: 18, stroke: 1.5 -%}
+          </button>
+        </div>
+        <div class="menu-drawer__navigation-container pm-drawer__body">
+          <nav class="menu-drawer__navigation pm-drawer__nav" aria-label="{{ 'premium.header.menu' | t }}">
+            <ul class="pm-drawer__list" role="list">
+              {%- for link in section.settings.menu.links -%}
+                <li class="pm-drawer__item">
+                  {%- if link.links != blank -%}
+                    <details id="Details-menu-drawer-menu-item-{{ forloop.index }}" class="pm-drawer__details">
+                      <summary
+                        id="HeaderDrawer-{{ link.handle }}"
+                        class="header__menu-item list-menu__item link focus-inset pm-drawer__row pm-drawer__row--toggle"
+                        aria-expanded="false"
+                        aria-controls="link-{{ link.handle | escape }}"
+                      >
+                        <span>{% render 'polish-store-text', text: link.title %}</span>
+                      </summary>
+                      <div id="link-{{ link.handle | escape }}" class="pm-drawer__panel" tabindex="-1">
+                        <ul class="pm-drawer__sublist" role="list">
+                          {%- comment -%} The level-1 row only toggles, so its own page is the first level-2 link {%- endcomment -%}
+                          <li class="pm-drawer__subitem">
+                            <a
+                              id="HeaderDrawer-{{ link.handle }}-all"
+                              href="{{ link.url }}"
+                              class="pm-drawer__sublink pm-drawer__sublink--all"
+                              {% if link.current %}
+                                aria-current="page"
+                              {% endif %}
+                            >
+                              {{- 'premium.general.view_all' | t -}}
+                            </a>
+                          </li>
+                          {%- for childlink in link.links -%}
+                            <li class="pm-drawer__subitem">
+                              <a
+                                id="HeaderDrawer-{{ link.handle }}-{{ childlink.handle }}"
+                                href="{{ childlink.url }}"
+                                class="pm-drawer__sublink"
+                                {% if childlink.current %}
+                                  aria-current="page"
+                                {% endif %}
+                              >
+                                {% render 'polish-store-text', text: childlink.title %}
+                              </a>
+                              {%- if childlink.links != blank -%}
+                                <ul class="pm-drawer__sublist pm-drawer__sublist--nested" role="list">
+                                  {%- for grandchildlink in childlink.links -%}
+                                    <li class="pm-drawer__subitem">
+                                      <a
+                                        id="HeaderDrawer-{{ link.handle }}-{{ childlink.handle }}-{{ grandchildlink.handle }}"
+                                        href="{{ grandchildlink.url }}"
+                                        class="pm-drawer__sublink"
+                                        {% if grandchildlink.current %}
+                                          aria-current="page"
+                                        {% endif %}
+                                      >
+                                        {% render 'polish-store-text', text: grandchildlink.title %}
+                                      </a>
+                                    </li>
+                                  {%- endfor -%}
+                                </ul>
+                              {%- endif -%}
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      </div>
+                    </details>
+                  {%- else -%}
+                    <a
+                      id="HeaderDrawer-{{ link.handle }}"
+                      href="{{ link.url }}"
+                      class="header__menu-item list-menu__item link link--text focus-inset pm-drawer__row"
+                      {% if link.current %}
+                        aria-current="page"
+                      {% endif %}
+                    >
+                      <span>{% render 'polish-store-text', text: link.title %}</span>
+                    </a>
+                  {%- endif -%}
+                </li>
+              {%- endfor -%}
+            </ul>
+          </nav>
+          <div class="menu-drawer__utility-links pm-drawer__foot">
+            <a class="pm-drawer__footlink" href="{{ routes.search_url }}">{{ 'premium.general.search' | t }}</a>
+            {%- if localization.available_countries or localization.available_languages -%}
+              <div class="menu-drawer__localization header-localization pm-drawer__localization">
+                {%- if localization.available_countries and localization.available_countries.size > 1 -%}
+                  <localization-form>
+                    {%- form 'localization', id: 'HeaderCountryMobileForm', class: 'localization-form' -%}
+                      <div>
+                        <h2 class="visually-hidden" id="HeaderCountryMobileLabel">
+                          {{ 'localization.country_label' | t }}
+                        </h2>
+                        {%- render 'country-localization', localPosition: 'HeaderCountryMobile' -%}
+                      </div>
+                    {%- endform -%}
+                  </localization-form>
+                {% endif %}
+
+                {%- if localization.available_languages and localization.available_languages.size > 1 -%}
+                  <localization-form>
+                    {%- form 'localization', id: 'HeaderLanguageMobileForm', class: 'localization-form' -%}
+                      <div>
+                        <h2 class="visually-hidden" id="HeaderLanguageMobileLabel">
+                          {{ 'localization.language_label' | t }}
+                        </h2>
+                        {%- render 'language-localization', localPosition: 'HeaderLanguageMobile' -%}
+                      </div>
+                    {%- endform -%}
+                  </localization-form>
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+            {%- liquid
+              assign drawer_social = false
+              if settings.social_twitter_link != blank or settings.social_facebook_link != blank or settings.social_pinterest_link != blank or settings.social_instagram_link != blank or settings.social_tiktok_link != blank or settings.social_tumblr_link != blank or settings.social_snapchat_link != blank or settings.social_youtube_link != blank or settings.social_vimeo_link != blank
+                assign drawer_social = true
+              endif
+            -%}
+            {%- if drawer_social -%}
+              {%- render 'social-icons', class: 'pm-drawer__social' -%}
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+</header-drawer>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // The close X routes through the burger summary so Dawn's HeaderDrawer runs its full close path
+    // (menu-open class, body scroll lock, focus trap, slide-out animation).
+    document.querySelectorAll('.pm-drawer__close').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var drawer = button.closest('header-drawer');
+        var summary = drawer ? drawer.querySelector('summary') : null;
+        if (summary) summary.click();
+      });
+    });
+  });
+</script>

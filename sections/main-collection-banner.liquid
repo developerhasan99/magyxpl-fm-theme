@@ -1,0 +1,244 @@
+{% comment %}theme-check-disable ImgLazyLoading{% endcomment %}
+{{ 'component-collection-hero.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Premium port (WP-D): the banner renders FM's compact collection hero (breadcrumb, pm-title left, muted
+  description) and keeps the tryscent.eu sentence fold (mgx-cdesc + the inline script below). Styles:
+  assets/pm-s-collection-hero.css (.pm-cbanner block); collection-description.css is no longer loaded here.
+{%- endcomment -%}
+{{ 'pm-s-collection-hero.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  @media screen and (max-width: 749px) {
+    .collection-hero--with-image .collection-hero__inner {
+      padding-bottom: calc({{ settings.media_shadow_vertical_offset | at_least: 0 }}px + 2rem);
+    }
+  }
+{%- endstyle -%}
+
+<div class="collection-hero{% if section.settings.show_collection_image and collection.image %} collection-hero--with-image{% endif %} color-{{ section.settings.color_scheme }} gradient">
+  <div class="collection-hero__inner page-width pm-cbanner {% if settings.animations_reveal_on_scroll %} scroll-trigger animate--fade-in{% endif %}">
+    <div class="collection-hero__text-wrapper pm-chero pm-chero--compact">
+      {%- if section.settings.show_breadcrumbs -%}
+        <nav class="pm-chero__crumbs" aria-label="{{ 'premium.collection.breadcrumbs' | t | escape }}">
+          {%- if section.settings.breadcrumb_home_label != blank -%}
+            <a href="{{ routes.root_url }}">{{ section.settings.breadcrumb_home_label | escape }}</a>
+            {%- render 'pm-icon', icon: 'chevron-right', size: 12 -%}
+          {%- endif -%}
+          <span aria-current="page">{%- render 'polish-store-text', text: collection.title -%}</span>
+        </nav>
+      {%- endif -%}
+      <h1 class="collection-hero__title pm-chero__title pm-title">
+        <span class="visually-hidden">{{ 'sections.collection_template.title' | t }}: </span>
+        {%- render 'polish-store-text', text: collection.title -%}
+      </h1>
+
+      {%- if section.settings.show_collection_description and collection.description != blank -%}
+        {%- comment -%}
+          Folded to the first sentence(s), port of the magyx.co banner (theessencevault.co.uk pattern); how many
+          sentences show is the section setting description_sentences. The script below runs as the page is
+          parsed, before the first paint, so the full text never flashes up. Without JavaScript the whole
+          description shows and the toggle stays hidden.
+        {%- endcomment -%}
+        <div class="collection-hero__description rte mgx-cdesc pm-chero__desc" data-mgx-cdesc>
+          <div class="mgx-cdesc__text" id="MgxCollectionDescription-{{ section.id }}">{{ collection.description }}</div>
+          <button
+            type="button"
+            class="mgx-cdesc__toggle pm-chero__toggle"
+            aria-expanded="false"
+            aria-controls="MgxCollectionDescription-{{ section.id }}"
+            data-more="{{ section.settings.description_more_label | escape }}"
+            data-less="{{ section.settings.description_less_label | escape }}"
+            hidden>
+            {{ section.settings.description_more_label | escape }}
+          </button>
+        </div>
+        <script>
+          (function () {
+            // Shows the first SHOWN sentences of the description (section setting, default 1); the rest (the remainder of that paragraph and every
+            // block after it) gets [hidden] until the toggle opens it. A sentence ends at . ! or ? followed by a space
+            // and a capital, a quote, a bracket or a digit, or at the end of a paragraph; "No." before a number is not
+            // an end.
+            var SHOWN = {{ section.settings.description_sentences | default: '1' | plus: 0 | at_least: 1 }};
+            var setup = function (root) {
+              if (!root || root.dataset.mgxReady) return;
+              root.dataset.mgxReady = '1';
+              var text = root.querySelector('.mgx-cdesc__text');
+              var toggle = root.querySelector('.mgx-cdesc__toggle');
+              if (!text || !toggle) return;
+              var blocks = [];
+              var loose = false;
+              for (var n = text.firstChild; n; n = n.nextSibling) {
+                if (n.nodeType === 1) blocks.push(n);
+                else if (n.nodeType === 3 && n.nodeValue.trim()) loose = true;
+              }
+              if (loose || !blocks.length) blocks = [text];
+              var ends = function (str) {
+                var out = [];
+                var re = /[.!?]+["'\u201d\u2019)]*(?=\s+["'\u201c\u2018\u201e(]?[A-Z0-9\u00c0-\u017d])/g;
+                var m;
+                while ((m = re.exec(str))) {
+                  if (/\bno\.$/i.test(str.slice(0, m.index + 1)) && /^\s+\d/.test(str.slice(re.lastIndex))) continue;
+                  out.push(re.lastIndex);
+                }
+                var trimmed = str.replace(/\s+$/, '');
+                if (/[.!?]["'\u201d\u2019)]*$/.test(trimmed) && out[out.length - 1] !== trimmed.length) out.push(trimmed.length);
+                return out;
+              };
+              var count = 0;
+              var cutBlock = -1;
+              var cutAt = -1;
+              for (var i = 0; i < blocks.length && cutBlock < 0; i++) {
+                var str = blocks[i].textContent;
+                var e = ends(str);
+                if (count + e.length >= SHOWN) {
+                  cutBlock = i;
+                  cutAt = e[SHOWN - count - 1];
+                }
+                count += e.length;
+              }
+              if (cutBlock < 0) return;
+              var hide = [];
+              var block = blocks[cutBlock];
+              var rest = block.textContent.slice(cutAt);
+              if (rest.trim()) {
+                // The second sentence ends inside a paragraph: move the rest of that paragraph into a hidden span.
+                var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+                var seen = 0;
+                var node;
+                while ((node = walker.nextNode())) {
+                  if (seen + node.nodeValue.length >= cutAt) break;
+                  seen += node.nodeValue.length;
+                }
+                if (!node) return;
+                var range = document.createRange();
+                range.setStart(node, cutAt - seen);
+                range.setEnd(block, block.childNodes.length);
+                var span = document.createElement('span');
+                span.className = 'mgx-cdesc__rest';
+                span.appendChild(range.extractContents());
+                block.appendChild(span);
+                hide.push(span);
+              }
+              for (var j = cutBlock + 1; j < blocks.length; j++) {
+                if (blocks[j] !== text && blocks[j].textContent.trim()) hide.push(blocks[j]);
+              }
+              if (!hide.length) return;
+              if (block !== text) block.classList.add('mgx-cdesc__cut');
+              hide.forEach(function (el) {
+                el.hidden = true;
+              });
+              toggle.hidden = false;
+              toggle.addEventListener('click', function () {
+                var open = toggle.getAttribute('aria-expanded') !== 'true';
+                toggle.setAttribute('aria-expanded', String(open));
+                toggle.textContent = open ? toggle.dataset.less : toggle.dataset.more;
+                root.classList.toggle('is-open', open);
+                hide.forEach(function (el) {
+                  el.hidden = !open;
+                });
+              });
+            };
+            var scripts = document.getElementsByTagName('script');
+            var me = document.currentScript || scripts[scripts.length - 1];
+            setup(me && me.previousElementSibling);
+            if (!window.mgxCdescEditor) {
+              window.mgxCdescEditor = true;
+              document.addEventListener('shopify:section:load', function (event) {
+                event.target.querySelectorAll('[data-mgx-cdesc]').forEach(setup);
+              });
+            }
+          })();
+        </script>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.show_collection_image and collection.image -%}
+      <div class="collection-hero__image-container media gradient">
+        <img
+          srcset="
+            {%- if collection.image.width >= 165 -%}{{ collection.image | image_url: width: 165 }} 165w,{%- endif -%}
+            {%- if collection.image.width >= 360 -%}{{ collection.image | image_url: width: 360 }} 360w,{%- endif -%}
+            {%- if collection.image.width >= 535 -%}{{ collection.image | image_url: width: 535 }} 535w,{%- endif -%}
+            {%- if collection.image.width >= 750 -%}{{ collection.image | image_url: width: 750 }} 750w,{%- endif -%}
+            {%- if collection.image.width >= 1070 -%}{{ collection.image | image_url: width: 1070 }} 1070w,{%- endif -%}
+            {%- if collection.image.width >= 1500 -%}{{ collection.image | image_url: width: 1500 }} 1500w,{%- endif -%}
+            {{ collection.image | image_url }} {{ collection.image.width }}w
+          "
+          src="{{ collection.image | image_url: width: 750 }}"
+          sizes="(min-width: {{ settings.page_width }}px) {{ settings.page_width | minus: 100 | divided_by: 2 }}px, (min-width: 750px) calc(50vw - 130px), calc(50vw - 55px)"
+          alt="{{ collection.image.alt | escape }}"
+          width="{{ collection.image.width }}"
+          height="{{ collection.image.height }}"
+        >
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main-collection-banner.name",
+  "class": "section",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.main-collection-banner.settings.paragraph.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_breadcrumbs",
+      "default": true,
+      "label": "Show breadcrumbs"
+    },
+    {
+      "type": "text",
+      "id": "breadcrumb_home_label",
+      "default": "Strona główna",
+      "label": "Breadcrumb home label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_description",
+      "default": true,
+      "label": "t:sections.main-collection-banner.settings.show_collection_description.label"
+    },
+    {
+      "type": "select",
+      "id": "description_sentences",
+      "label": "Description: sentences shown",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" }
+      ],
+      "default": "1",
+      "info": "The rest of the description opens with the link below"
+    },
+    {
+      "type": "text",
+      "id": "description_more_label",
+      "label": "Description: show more",
+      "default": "Czytaj więcej"
+    },
+    {
+      "type": "text",
+      "id": "description_less_label",
+      "label": "Description: show less",
+      "default": "Zwiń"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_image",
+      "default": false,
+      "label": "t:sections.main-collection-banner.settings.show_collection_image.label",
+      "info": "t:sections.main-collection-banner.settings.show_collection_image.info"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,241 @@
+{{ 'pm-s-you-may-like.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Premium redesign (WP-C2): FM card + quick-buy square. Card ATC adds the first available variant
+  (no forced 100 ml). Titles go through polish-store-text; "Inspired by" reads custom.inspired_by.
+  No id="product-variant-id" here: that id belongs to the main product form only.
+{%- endcomment -%}
+{%- liquid
+  assign products_count = section.settings.products_count | default: 5
+-%}
+{%- style -%}
+  .premium .pm-ymal--{{ section.id }} {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .premium .pm-ymal--{{ section.id }} {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+<div id="{{ section.id }}" class="pm-ymal pm-ymal--{{ section.id }} color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width pm-ymal__head">
+    <div class="pm-ymal__intro">
+      <h2 class="pm-h2 pm-ymal__heading">{{ section.settings.title }}</h2>
+      {%- if section.settings.description != blank -%}
+        <div class="pm-ymal__description pm-body pm-muted rte">{{ section.settings.description }}</div>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.button_text != blank -%}
+      <a href="{{ section.settings.button_link }}" class="pm-btn pm-btn--link pm-ymal__link">{{ section.settings.button_text }}</a>
+    {%- endif -%}
+  </div>
+  <div class="swiper pm-ymal__swiper" id="you-may-like-swiper">
+    <div class="swiper-wrapper">
+      {%- for product in section.settings.collection.products limit: products_count -%}
+        {%- liquid
+          assign selected_variant = product.selected_or_first_available_variant
+          assign inspiration_name = product.metafields.custom.inspired_by.value.name
+          assign quick_label = 'premium.card.quick_add' | t: size: selected_variant.title
+          if product.available == false
+            assign quick_label = 'products.product.sold_out' | t
+          endif
+          assign ymal_form_id = 'ymal-form-' | append: section.id | append: '-' | append: forloop.index
+        -%}
+        {%- capture ymal_title -%}{% render 'polish-store-text', text: product.title %}{%- endcapture -%}
+        {%- assign ymal_title = ymal_title | strip -%}
+        <div class="swiper-slide pm-ymal__slide">
+          <div class="pm-card pm-ymal__card">
+            <div class="pm-card__media pm-ymal__media">
+              <a href="{{ product.url }}" class="pm-ymal__media-link" aria-label="{{ ymal_title }}">
+                {%- if product.featured_image != blank -%}
+                  <img
+                    src="{{ product.featured_image | image_url: width: 540 }}"
+                    srcset="{{ product.featured_image | image_url: width: 360 }} 360w, {{ product.featured_image | image_url: width: 540 }} 540w, {{ product.featured_image | image_url: width: 720 }} 720w"
+                    sizes="(min-width: 990px) 25vw, (min-width: 750px) 33vw, 48vw"
+                    alt="{{ ymal_title }}"
+                    width="{{ product.featured_image.width }}"
+                    height="{{ product.featured_image.height }}"
+                    loading="lazy"
+                    class="pm-card__img">
+                {%- endif -%}
+              </a>
+              <product-form
+                class="product-form pm-card__quick-form"
+                data-hide-errors="false"
+                data-section-id="{{ section.id }}">
+                {%- form 'product',
+                  product,
+                  id: ymal_form_id,
+                  class: 'form',
+                  novalidate: 'novalidate',
+                  data-type: 'add-to-cart-form'
+                -%}
+                  <input
+                    type="hidden"
+                    name="id"
+                    value="{{ selected_variant.id }}"
+                    class="product-variant-id">
+                  <button
+                    type="submit"
+                    name="add"
+                    class="pm-card__quick pm-ymal__quick"
+                    aria-label="{{ quick_label | escape }}"
+                    {% if product.available == false %}disabled aria-disabled="true"{% endif %}>
+                    <span class="pm-card__quick-label">{{ quick_label }}</span>
+                    {% render 'pm-icon', icon: 'bag', size: 18, stroke: 1.5, class: 'pm-card__quick-icon' %}
+                    {%- render 'loading-spinner' -%}
+                  </button>
+                  <div class="product-form__error-message-wrapper pm-ymal__error" role="alert" hidden>
+                    <span class="product-form__error-message"></span>
+                  </div>
+                {%- endform -%}
+              </product-form>
+            </div>
+            <div class="pm-card__info pm-ymal__info">
+              <h3 class="pm-card__title pm-ymal__title">
+                <a href="{{ product.url }}">{{ ymal_title }}</a>
+              </h3>
+              {%- if inspiration_name != blank -%}
+                <p class="pm-card__meta pm-ymal__meta pm-dmeta">
+                  {%- render 'pm-designer-thumb', product: product -%}
+                  <span class="pm-dmeta__text">{{ 'premium.card.inspired_by' | t: name: inspiration_name }}</span>
+                </p>
+              {%- endif -%}
+              <div class="pm-card__price pm-ymal__price">
+                <span class="pm-card__price-current">{{ selected_variant.price | money }}</span>
+                {%- if selected_variant.compare_at_price > selected_variant.price -%}
+                  <s class="pm-card__compare">{{ selected_variant.compare_at_price | money }}</s>
+                {%- endif -%}
+              </div>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+    <button type="button" class="swiper-button-prev pm-ymal__arrow" aria-label="{{ 'premium.general.previous' | t }}"></button>
+    <button type="button" class="swiper-button-next pm-ymal__arrow" aria-label="{{ 'premium.general.next' | t }}"></button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof Swiper === 'undefined') return;
+    new Swiper('#you-may-like-swiper', {
+      slidesPerView: 2.1,
+      spaceBetween: 2,
+      watchOverflow: true,
+
+      navigation: {
+        nextEl: '#you-may-like-swiper .swiper-button-next',
+        prevEl: '#you-may-like-swiper .swiper-button-prev',
+      },
+
+      breakpoints: {
+        750: {
+          slidesPerView: 3,
+          spaceBetween: 2,
+        },
+        990: {
+          slidesPerView: 4,
+          spaceBetween: 2,
+        },
+      },
+    });
+  });
+</script>
+
+{% schema %}
+  {
+    "name": "You May Like",
+    "class": "you-may-like",
+    "settings": [
+      {
+        "type": "color_scheme",
+        "id": "color_scheme",
+        "label": "Color scheme",
+        "default": "scheme-1"
+      },
+      {
+        "type": "color",
+        "id": "background_color",
+        "label": "Background Color (legacy, no longer used)",
+        "default": "#ffffff"
+      },
+      {
+        "type": "image_picker",
+        "id": "background_image",
+        "label": "Background Image (legacy, no longer used)"
+      },
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Title",
+        "default": "Może ci się spodobać"
+      },
+      {
+        "type": "richtext",
+        "id": "description",
+        "label": "Description"
+      },
+      {
+        "type": "collection",
+        "id": "collection",
+        "label": "Collection"
+      },
+      {
+        "type": "range",
+        "id": "products_count",
+        "label": "Products shown",
+        "min": 2,
+        "max": 12,
+        "step": 1,
+        "default": 5
+      },
+      {
+        "type": "text",
+        "id": "button_text",
+        "label": "Button Text",
+        "default": "Zobacz wszystkie"
+      },
+      {
+        "type": "url",
+        "id": "button_link",
+        "label": "Button Link",
+        "default": "/collections/all"
+      },
+      {
+        "type": "header",
+        "content": "Section Padding"
+      },
+      {
+        "type": "range",
+        "id": "padding_top",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "Padding Top",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "padding_bottom",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "Padding Bottom",
+        "default": 36
+      }
+    ],
+    "presets": [
+      {
+        "name": "You May Like"
+      }
+    ]
+  }
+{% endschema %}

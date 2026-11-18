@@ -1,0 +1,461 @@
+{%- comment -%}
+  pdp-scent-notes (WP-C2): black band with Nuty głowy / serca / bazy tiles and an attribute row.
+  Notes come from product metafields custom.top_notes / middle_notes / base_notes. On tryscent.eu these are
+  metaobject references (type scent_note: heading = "Cynamon · Skóra · Ambra", description); text and list
+  shapes are handled too. A tile shows one ingredient of its layer with its photo.
+  Fallback (setting "fallback_description"): the Polish note lines of the product description,
+  "Nuty głowy: …" / "Nuta głowy: …" (serca, bazy), used only for a layer whose metafield is empty.
+  Attributes: custom.fragrance_family / occasion / season (Polish single-line text) and
+  custom.scent_intensity (integer, 1 Lekki · 2 Średni · 3 Mocny as in scent-profiling; values above 3 show as 3 dots;
+  the words are section settings, read as the dots' aria-label).
+  Renders nothing on the storefront when all three notes are blank; the theme editor shows a placeholder.
+{%- endcomment -%}
+{%- liquid
+  assign note_top = ''
+  assign note_heart = ''
+  assign note_base = ''
+
+  assign mf = product.metafields.custom.top_notes
+  if mf != blank
+    if mf.type contains 'list.'
+      capture note_top
+        for n in mf.value
+          echo n.heading | default: n.name | default: n
+          unless forloop.last
+            echo ', '
+          endunless
+        endfor
+      endcapture
+    elsif mf.type == 'metaobject_reference'
+      assign note_top = mf.value.heading | default: mf.value.name
+    else
+      assign note_top = mf.value | strip_html
+    endif
+  endif
+
+  assign mf = product.metafields.custom.middle_notes
+  if mf != blank
+    if mf.type contains 'list.'
+      capture note_heart
+        for n in mf.value
+          echo n.heading | default: n.name | default: n
+          unless forloop.last
+            echo ', '
+          endunless
+        endfor
+      endcapture
+    elsif mf.type == 'metaobject_reference'
+      assign note_heart = mf.value.heading | default: mf.value.name
+    else
+      assign note_heart = mf.value | strip_html
+    endif
+  endif
+
+  assign mf = product.metafields.custom.base_notes
+  if mf != blank
+    if mf.type contains 'list.'
+      capture note_base
+        for n in mf.value
+          echo n.heading | default: n.name | default: n
+          unless forloop.last
+            echo ', '
+          endunless
+        endfor
+      endcapture
+    elsif mf.type == 'metaobject_reference'
+      assign note_base = mf.value.heading | default: mf.value.name
+    else
+      assign note_base = mf.value | strip_html
+    endif
+  endif
+
+  assign note_top = note_top | strip
+  assign note_heart = note_heart | strip
+  assign note_base = note_base | strip
+
+  # Polish description fallback: lines "Nuty głowy: …", "Nuta serca: …", "Nuty bazy: …".
+  if section.settings.fallback_description
+    if note_top == blank or note_heart == blank or note_base == blank
+      assign desc_lines = product.description | replace: '<br>', '@@' | replace: '<br/>', '@@' | replace: '<br />', '@@' | replace: '</p>', '@@' | replace: '</li>', '@@' | strip_html | split: '@@'
+      for line in desc_lines
+        unless line contains ':'
+          continue
+        endunless
+        assign line_head = line | split: ':' | first | strip | downcase
+        assign line_body = line | split: ':' | last | strip
+        if line_body == blank
+          continue
+        endif
+        if line_head == 'nuty głowy' or line_head == 'nuta głowy'
+          if note_top == blank
+            assign note_top = line_body
+          endif
+        elsif line_head == 'nuty serca' or line_head == 'nuta serca'
+          if note_heart == blank
+            assign note_heart = line_body
+          endif
+        elsif line_head == 'nuty bazy' or line_head == 'nuta bazy'
+          if note_base == blank
+            assign note_base = line_body
+          endif
+        endif
+      endfor
+    endif
+  endif
+
+  # Tile: one ingredient per layer with the photo of that note. Photo = magyx-note-<key>.jpg in this store's Files
+  # (Content > Files) of the first ingredient that has one (Polish name -> key via the generated
+  # snippets/pm-note-handle.liquid, scripts/build_note_map.py), else the section image. The tile names that
+  # ingredient; without any match it names the first ingredient.
+  assign tile_top_name = ''
+  assign tile_top_file = ''
+  assign parts = note_top | replace: ' · ', ',' | replace: '·', ',' | replace: ' . ', ',' | replace: ' & ', ',' | replace: ' – ', ',' | split: ','
+  for part in parts
+    assign pp = part | strip
+    if pp == blank
+      continue
+    endif
+    if tile_top_name == blank
+      assign tile_top_name = pp
+    endif
+    assign pp_key = pp | downcase
+    capture tile_handle
+      render 'pm-note-handle', name: pp_key
+    endcapture
+    assign tile_handle = tile_handle | strip
+    if tile_handle != blank
+      assign tile_top_file = 'magyx-note-' | append: tile_handle | append: '.jpg'
+      assign tile_top_name = pp
+      break
+    endif
+  endfor
+  assign tile_top_name = tile_top_name | capitalize
+  assign tile_top_img = section.settings.image_top
+
+  assign tile_heart_name = ''
+  assign tile_heart_file = ''
+  assign parts = note_heart | replace: ' · ', ',' | replace: '·', ',' | replace: ' . ', ',' | replace: ' & ', ',' | replace: ' – ', ',' | split: ','
+  for part in parts
+    assign pp = part | strip
+    if pp == blank
+      continue
+    endif
+    if tile_heart_name == blank
+      assign tile_heart_name = pp
+    endif
+    assign pp_key = pp | downcase
+    capture tile_handle
+      render 'pm-note-handle', name: pp_key
+    endcapture
+    assign tile_handle = tile_handle | strip
+    if tile_handle != blank
+      assign tile_heart_file = 'magyx-note-' | append: tile_handle | append: '.jpg'
+      assign tile_heart_name = pp
+      break
+    endif
+  endfor
+  assign tile_heart_name = tile_heart_name | capitalize
+  assign tile_heart_img = section.settings.image_heart
+
+  assign tile_base_name = ''
+  assign tile_base_file = ''
+  assign parts = note_base | replace: ' · ', ',' | replace: '·', ',' | replace: ' . ', ',' | replace: ' & ', ',' | replace: ' – ', ',' | split: ','
+  for part in parts
+    assign pp = part | strip
+    if pp == blank
+      continue
+    endif
+    if tile_base_name == blank
+      assign tile_base_name = pp
+    endif
+    assign pp_key = pp | downcase
+    capture tile_handle
+      render 'pm-note-handle', name: pp_key
+    endcapture
+    assign tile_handle = tile_handle | strip
+    if tile_handle != blank
+      assign tile_base_file = 'magyx-note-' | append: tile_handle | append: '.jpg'
+      assign tile_base_name = pp
+      break
+    endif
+  endfor
+  assign tile_base_name = tile_base_name | capitalize
+  assign tile_base_img = section.settings.image_base
+
+  assign has_notes = false
+  if tile_top_name != blank or tile_heart_name != blank or tile_base_name != blank
+    assign has_notes = true
+  endif
+
+  assign attr_family = ''
+  assign mf = product.metafields.custom.fragrance_family
+  if mf != blank
+    if mf.type contains 'list.'
+      assign attr_family = mf.value | join: ', '
+    else
+      assign attr_family = mf.value
+    endif
+  endif
+
+  assign attr_occasion = ''
+  assign mf = product.metafields.custom.occasion
+  if mf != blank
+    if mf.type contains 'list.'
+      assign attr_occasion = mf.value | join: ', '
+    else
+      assign attr_occasion = mf.value
+    endif
+  endif
+
+  assign attr_season = ''
+  assign mf = product.metafields.custom.season
+  if mf == blank
+    assign mf = product.metafields.custom.wearing_season
+  endif
+  if mf != blank
+    if mf.type contains 'list.'
+      assign attr_season = mf.value | join: ', '
+    else
+      assign attr_season = mf.value
+    endif
+  endif
+
+  assign intensity_level = 0
+  assign intensity_word = ''
+  assign mf = product.metafields.custom.scent_intensity
+  if mf != blank
+    assign intensity_level = mf.value | times: 1
+    if intensity_level > 3
+      assign intensity_level = 3
+    endif
+    case intensity_level
+      when 1
+        assign intensity_word = section.settings.intensity_light
+      when 2
+        assign intensity_word = section.settings.intensity_medium
+      when 3
+        assign intensity_word = section.settings.intensity_strong
+    endcase
+  endif
+
+  assign has_attrs = false
+  if section.settings.show_attributes
+    if attr_family != blank or attr_occasion != blank or attr_season != blank or intensity_level >= 1
+      assign has_attrs = true
+    endif
+  endif
+
+  assign label_top = section.settings.label_top
+  if label_top == blank
+    assign label_top = 'premium.pdp.top' | t
+  endif
+  assign label_heart = section.settings.label_heart
+  if label_heart == blank
+    assign label_heart = 'premium.pdp.heart' | t
+  endif
+  assign label_base = section.settings.label_base
+  if label_base == blank
+    assign label_base = 'premium.pdp.base' | t
+  endif
+  assign heading = section.settings.heading
+  if heading == blank
+    assign heading = 'premium.pdp.scent_notes' | t
+  endif
+-%}
+{%- if has_notes or request.design_mode -%}
+  {{ 'pm-s-pdp-scent-notes.css' | asset_url | stylesheet_tag }}
+  {%- style -%}
+    .premium .pm-scent--{{ section.id }} {
+      padding-top: {{ section.settings.padding_top | times: 0.5 | round: 0 }}px;
+      padding-bottom: {{ section.settings.padding_bottom | times: 0.5 | round: 0 }}px;
+    }
+
+    @media screen and (min-width: 990px) {
+      .premium .pm-scent--{{ section.id }} {
+        padding-top: {{ section.settings.padding_top }}px;
+        padding-bottom: {{ section.settings.padding_bottom }}px;
+      }
+    }
+  {%- endstyle -%}
+  <div class="pm-scent pm-scent--{{ section.id }} color-{{ section.settings.color_scheme }} gradient">
+    <div class="pm-scent__inner">
+      {%- if has_notes -%}
+        <h2 class="pm-h2 pm-scent__heading">{{ heading }}</h2>
+        <ul class="pm-scent__tiles" role="list">
+          {%- if tile_top_name != blank -%}
+            {%- render 'pm-scent-tile', label: label_top, name: tile_top_name, image: tile_top_img, file: tile_top_file -%}
+          {%- endif -%}
+          {%- if tile_heart_name != blank -%}
+            {%- render 'pm-scent-tile', label: label_heart, name: tile_heart_name, image: tile_heart_img, file: tile_heart_file -%}
+          {%- endif -%}
+          {%- if tile_base_name != blank -%}
+            {%- render 'pm-scent-tile', label: label_base, name: tile_base_name, image: tile_base_img, file: tile_base_file -%}
+          {%- endif -%}
+        </ul>
+        {%- if has_attrs -%}
+          <dl class="pm-scent__attrs">
+            {%- if attr_family != blank -%}
+              <div class="pm-scent__attr">
+                <dt class="pm-scent__attr-label">{{ 'premium.pdp.family' | t }}</dt>
+                <dd class="pm-scent__attr-value">{{ attr_family }}</dd>
+              </div>
+            {%- endif -%}
+            {%- if attr_occasion != blank -%}
+              <div class="pm-scent__attr">
+                <dt class="pm-scent__attr-label">{{ 'premium.pdp.occasion' | t }}</dt>
+                <dd class="pm-scent__attr-value">{{ attr_occasion }}</dd>
+              </div>
+            {%- endif -%}
+            {%- if attr_season != blank -%}
+              <div class="pm-scent__attr">
+                <dt class="pm-scent__attr-label">{{ 'premium.pdp.season' | t }}</dt>
+                <dd class="pm-scent__attr-value">{{ attr_season }}</dd>
+              </div>
+            {%- endif -%}
+            {%- if intensity_level >= 1 -%}
+              <div class="pm-scent__attr">
+                <dt class="pm-scent__attr-label">{{ 'premium.pdp.intensity' | t }}</dt>
+                <dd class="pm-scent__attr-value">
+                  <span class="pm-scent__dots" role="img" aria-label="{{ intensity_word | escape }}">
+                    {%- for i in (1..3) -%}
+                      <span class="pm-scent__dot{% if i <= intensity_level %} is-on{% endif %}"></span>
+                    {%- endfor -%}
+                  </span>
+                </dd>
+              </div>
+            {%- endif -%}
+          </dl>
+        {%- endif -%}
+      {%- else -%}
+        <p class="pm-scent__placeholder pm-small">Nuty zapachowe: ten produkt nie ma jeszcze nut głowy, serca ani bazy (metafields custom.top_notes / middle_notes / base_notes albo linie „Nuty głowy:” w opisie). Na stronie sklepu sekcja pozostaje ukryta, dopóki ich nie uzupełnisz.</p>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Scent notes",
+  "tag": "section",
+  "class": "pm-scent-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-4"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Nuty zapachowe"
+    },
+    {
+      "type": "header",
+      "content": "Tiles"
+    },
+    {
+      "type": "text",
+      "id": "label_top",
+      "label": "Top label",
+      "info": "Blank = Nuty głowy"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_top",
+      "label": "Top image (optional, 30% dark overlay)"
+    },
+    {
+      "type": "text",
+      "id": "label_heart",
+      "label": "Heart label",
+      "info": "Blank = Nuty serca"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_heart",
+      "label": "Heart image (optional)"
+    },
+    {
+      "type": "text",
+      "id": "label_base",
+      "label": "Base label",
+      "info": "Blank = Nuty bazy"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_base",
+      "label": "Base image (optional)"
+    },
+    {
+      "type": "checkbox",
+      "id": "fallback_description",
+      "label": "Read notes from the product description when the metafields are empty",
+      "info": "Uses description lines like \"Nuty głowy: …\", \"Nuty serca: …\", \"Nuty bazy: …\".",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Attributes"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_attributes",
+      "label": "Show family, occasion, season and intensity",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "intensity_light",
+      "label": "Intensity 1 (screen readers)",
+      "default": "Lekki"
+    },
+    {
+      "type": "text",
+      "id": "intensity_medium",
+      "label": "Intensity 2 (screen readers)",
+      "default": "Średni"
+    },
+    {
+      "type": "text",
+      "id": "intensity_strong",
+      "label": "Intensity 3 and above (screen readers)",
+      "default": "Mocny"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "info": "Half of this value below 990px.",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 80
+    }
+  ],
+  "presets": [
+    {
+      "name": "Scent notes"
+    }
+  ]
+}
+{% endschema %}

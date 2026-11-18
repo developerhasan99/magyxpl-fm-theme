@@ -1,0 +1,894 @@
+{% comment %}
+  quantity-breaker: size cards, bundle tiers (1 / 2+1 / 3+2) with the bonus-scent picker, subtotal, ATC,
+  payment strip (BLIK / Klarna, payment-badge.svg) and the delivery / InPost / guarantee badges.
+  Premium design (WP-C1): FM look (pm-opt option picker, pm-tier, pm-slots, pm-atc, pm-modal in assets/pm-pdp.css),
+  money via window.pmMoney, sold-out sizes disabled, bonus picker limited to scents in stock in the chosen size.
+  1:1 FM pass (30.10.2026): headings and the save badge are FM's (premium.* keys); store-specific: 100 ml default size
+  listed first (no "50 ml" hint), tier names 2 + 1 / 3 + 2 GRATIS, bonus pool = top-sellers, gender from the German
+  store tags, titles through polish-store-text, "Bundle Fragrance" line property. FM has no badge row under the payment
+  strip, so shipping-badges is no longer rendered here (trust_row block in the template carries shipping + guarantee).
+  Frozen hooks: #atc_scroll_target, #variant-selector .variant-button (since 12.11.2026 one button per option value,
+  data-option-index + data-value, no longer one per variant), input#product-variant-id,
+  items[n][id|quantity|properties], .atc-button.cta_product_from_submit_btn, $store.qb.*.
+{% endcomment %}
+{% liquid
+  assign product_form_id = 'product-form-' | append: section.id
+
+  comment
+    Default size = the first AVAILABLE 100 ml variant (store default), else the first available variant,
+    else the first variant (everything sold out: every size card renders sold out, the ATC is disabled).
+  endcomment
+  assign selected_variant = blank
+  for variant in product.variants
+    assign variant_title_down = variant.title | downcase
+    if variant_title_down contains '100' and variant.available
+      assign selected_variant = variant
+      break
+    endif
+  endfor
+  if selected_variant == blank
+    for variant in product.variants
+      if variant.available
+        assign selected_variant = variant
+        break
+      endif
+    endfor
+  endif
+  if selected_variant == blank
+    assign selected_variant = product.selected_or_first_available_variant
+  endif
+
+  assign bonus_collection = collections['top-sellers']
+  # Scents with a stronger version (24% / 30%) that sit outside the first 50 of top-sellers: smart collection
+  # 'mocniejsze-zaperfumowanie' (variant title contains 24% or 30%). Missing collection = top-sellers only.
+  assign bonus_pool = bonus_collection.products
+  assign strength_collection = collections['mocniejsze-zaperfumowanie']
+  if strength_collection != blank and strength_collection.products.size > 0
+    assign bonus_pool = bonus_pool | concat: strength_collection.products
+  endif
+  assign bonus_seen_ids = ','
+  assign selected_size_key = selected_variant.title | downcase | remove: ' '
+
+  assign sold_out_label = 'products.product.sold_out' | t
+  assign add_to_cart_label = 'products.product.add_to_cart' | t
+
+  assign main_inspiration = product.metafields.custom.inspired_by.value.name | default: '' | strip
+  assign main_designer = product.metafields.custom.inspired_by.value.image.value
+%}
+
+{% comment %} Hide Rapi bundle for default template {% endcomment %}
+<style>
+  .rapi-bundle-content-0,
+  .rapi-bundle-boosters-afteratc-0 {
+    display: none !important;
+  }
+
+  [x-cloak] {
+    display: none !important;
+  }
+
+  {% comment %} .button.loading only fades inherited text color; this badge sets its
+     own background/text color so it needs to be hidden explicitly while loading {% endcomment %}
+  .atc-button.loading > *:not(.loading__spinner) {
+    visibility: hidden;
+  }
+
+  {% comment %} ATC anchor (stacks-up button, floating bar) clears the sticky header {% endcomment %}
+  #atc_scroll_target {
+    scroll-margin-top: calc(var(--header-height, 0px) + 12px);
+  }
+</style>
+
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<div
+  id="atc_scroll_target"
+  class="pm-qb"
+  x-data
+  x-effect="$store.qb.currentPrice; $store.qb.currentCompare; $store.qb.syncGlobalPrices()">
+  {% if product.variants.size > 1 %}
+    {% comment %}
+      Option picker (12.11.2026, look of magiczne-perfumy.pl): one row per product option, "Wybierz pojemność"
+      (100 ml / 50 ml) and "Wybierz zaperfumowanie" (24% / 20%). Products and SKUs keep their option structure;
+      a click picks one option value and $store.qb.selectOption resolves it to an existing variant (same variant
+      keys as before, so the bundle picker and the form are unchanged). Values run largest first; a value with no
+      variant in stock is greyed out and can't be picked. Size labels read "100 ml" whatever the admin spelling
+      (50ml / 50 ml / 50ML); the option may be called Pojemność or Size.
+    {% endcomment %}
+    <div class="pm-variant-picker" id="variant-selector">
+      {% for option in product.options_with_values %}
+        {% liquid
+          assign option_index = forloop.index0
+          assign option_name_down = option.name | downcase
+          assign option_kind = 'other'
+          if option_name_down contains 'pojemno' or option_name_down contains 'size' or option_name_down contains 'rozmiar'
+            assign option_kind = 'size'
+          elsif option_name_down contains 'zaperfum'
+            assign option_kind = 'strength'
+          endif
+
+          assign option_values = option.values
+          assign first_number = option.values.first | downcase | remove: 'ml' | remove: '%' | strip | plus: 0
+          assign last_number = option.values.last | downcase | remove: 'ml' | remove: '%' | strip | plus: 0
+          if first_number < last_number
+            assign option_values = option.values | reverse
+          endif
+          assign option_label_id = 'pm-opt-label-' | append: section.id | append: '-' | append: option_index
+        %}
+        <div class="pm-opt" role="group" aria-labelledby="{{ option_label_id }}">
+          <div class="pm-opt__label" id="{{ option_label_id }}">
+            {%- if option_kind == 'size' -%}
+              <svg class="pm-opt__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="2" width="6" height="3.5" rx="1"/><path d="M10.5 5.5V8M13.5 5.5V8"/><rect x="5" y="8" width="14" height="14" rx="3"/><path d="M5 14.5c2.3 1 4.7 1 7 0s4.7-1 7 0"/></svg>
+              <span>{{ 'premium.pdp.choose_size' | t }}</span>
+            {%- elsif option_kind == 'strength' -%}
+              <svg class="pm-opt__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2M17.7 7.7A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+              <span>{{ 'premium.pdp.choose_strength' | t }}</span>
+            {%- else -%}
+              <span>{{ 'premium.pdp.choose_option' | t: option: option_name_down }}</span>
+            {%- endif -%}
+          </div>
+
+          <div class="pm-opt__values">
+            {% for value in option_values %}
+              {% liquid
+                assign value_label = value
+                if option_kind == 'size'
+                  assign value_label = value | downcase | remove: ' ' | replace: 'ml', ' ml'
+                endif
+
+                assign value_available = false
+                for variant in product.variants
+                  if variant.options[option_index] == value and variant.available
+                    assign value_available = true
+                    break
+                  endif
+                endfor
+
+                assign value_selected = false
+                if selected_variant.options[option_index] == value
+                  assign value_selected = true
+                endif
+              %}
+              <button
+                type="button"
+                class="variant-button pm-opt__btn{% if value_selected %} is-selected{% endif %}{% unless value_available %} is-soldout{% endunless %}"
+                data-option-index="{{ option_index }}"
+                data-value="{{ value | escape }}"
+                @click="$store.qb.selectOption($el.dataset.optionIndex, $el.dataset.value)"
+                :class="{ 'is-selected': $store.qb.isOptionSelected($el.dataset.optionIndex, $el.dataset.value) }"
+                :aria-pressed="$store.qb.isOptionSelected($el.dataset.optionIndex, $el.dataset.value) ? 'true' : 'false'"
+                aria-pressed="{{ value_selected }}"
+                {% unless value_available %}aria-disabled="true" title="{{ sold_out_label | escape }}"{% endunless %}>
+                {{- value_label -}}
+                {%- unless value_available -%}<span class="visually-hidden"> ({{ sold_out_label }})</span>{%- endunless -%}
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% comment %} Quantity breaker tiers {% endcomment %}
+  <div class="pm-bundle-head">
+    <span class="pm-eyebrow pm-bundle-head__label">{{ 'premium.pdp.bundle_heading' | t }}</span>
+    <p class="pm-bundle-head__sub">{{ 'premium.pdp.bundle_subheading' | t }}</p>
+  </div>
+
+  <div class="pm-tiers" role="radiogroup">
+    <template x-for="tier in $store.qb.tiers" :key="tier.key">
+      <div
+        class="pm-tier"
+        :class="{ 'is-selected': $store.qb.selectedTierKey === tier.key }">
+        {% comment %} Card header selects the tier {% endcomment %}
+        <div
+          class="pm-tier__head"
+          role="radio"
+          tabindex="0"
+          :aria-checked="$store.qb.selectedTierKey === tier.key ? 'true' : 'false'"
+          @click="$store.qb.selectTier(tier.key)"
+          @keydown.enter.prevent="$store.qb.selectTier(tier.key)"
+          @keydown.space.prevent="$store.qb.selectTier(tier.key)">
+          <span class="pm-tier__radio" aria-hidden="true"></span>
+
+          <span class="pm-tier__main">
+            <span class="pm-tier__row">
+              <span class="pm-tier__label" x-text="tier.label"></span>
+              <span
+                x-show="$store.qb.savingsPercent(tier) > 0"
+                x-cloak
+                class="pm-tier__save"
+                x-text="$store.qb.saveText(tier)"></span>
+            </span>
+            <span
+              class="pm-tier__note"
+              x-show="tier.total > 1 || tier.note"
+              x-text="tier.total > 1 ? $store.qb.perBottleText(tier) : tier.note"></span>
+          </span>
+
+          <span class="pm-tier__prices">
+            <span
+              class="pm-tier__compare"
+              x-show="$store.qb.tierCompare(tier) > $store.qb.tierPrice(tier)"
+              x-cloak
+              x-text="$store.qb.money($store.qb.tierCompare(tier))"></span>
+            <span class="pm-tier__price" x-text="$store.qb.money($store.qb.tierPrice(tier))"></span>
+          </span>
+        </div>
+
+        <span
+          x-show="tier.badge"
+          x-text="tier.badge"
+          x-cloak
+          class="pm-tier__flag"></span>
+
+        {% comment %} Expanded body: bundle slots (1 pre-selected + the rest chosen by the customer); single bottle has no panel {% endcomment %}
+        <div
+          x-show="$store.qb.selectedTierKey === tier.key && tier.total > 1"
+          x-cloak
+          class="pm-slots">
+          <p class="pm-slots__status" :class="{ 'is-complete': $store.qb.remaining === 0 }">
+            <span x-text="$store.qb.scentsInBundleText(tier)"></span>
+            <span aria-hidden="true">&middot;</span>
+            <span x-show="$store.qb.remaining > 0" x-text="$store.qb.leftToChooseText()"></span>
+            <span x-show="$store.qb.remaining === 0">{{ 'premium.pdp.complete' | t }}</span>
+          </p>
+
+          <template x-for="(slot, i) in $store.qb.slotList(tier)" :key="i">
+            <div class="pm-slot" :class="{ 'is-filled': slot.product, 'is-unavailable': slot.product && slot.product.unavailable }">
+              <template x-if="slot.product">
+                <img
+                  :src="slot.product.image"
+                  :alt="slot.product.name"
+                  width="48"
+                  height="48"
+                  class="pm-slot__thumb">
+              </template>
+              <template x-if="!slot.product">
+                <span class="pm-slot__empty" aria-hidden="true">{% render 'pm-icon', icon: 'plus', size: 16, stroke: 1.5 %}</span>
+              </template>
+
+              <span class="pm-slot__body">
+                <template x-if="slot.product">
+                  <span>
+                    <span class="pm-slot__name" x-text="slot.product.name"></span>
+                    <span
+                      class="pm-slot__meta"
+                      x-show="slot.product.unavailable"
+                      x-text="$store.qb.soldOutInSizeText()"></span>
+                    <span
+                      class="pm-slot__meta pm-dmeta"
+                      x-show="!slot.product.unavailable && slot.product.inspiration_name">
+                      <template x-if="slot.product.designer_image">
+                        <span class="pm-dthumb" aria-hidden="true"><img :src="slot.product.designer_image" alt="" width="48" height="48" class="pm-dthumb__img"></span>
+                      </template>
+                      <span class="pm-dmeta__text" x-text="$store.qb.inspiredByText(slot.product.inspiration_name)"></span>
+                    </span>
+                  </span>
+                </template>
+                <template x-if="!slot.product">
+                  <span class="pm-slot__name">{{ 'premium.pdp.choose_scent' | t }}</span>
+                </template>
+              </span>
+
+              <span
+                x-show="slot.preselected"
+                class="pm-slot__pre">{{ 'premium.pdp.preselected' | t }}</span>
+              <button
+                x-show="!slot.preselected"
+                type="button"
+                @click="$store.qb.openModal()"
+                class="pm-btn pm-btn--mini"
+                :class="slot.product ? 'pm-btn--secondary' : 'pm-btn--primary'"
+                x-text="slot.product ? $store.qb.labels.change : $store.qb.labels.select"></button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  {% comment %} Subtotal: lives outside the button (the loading state hides everything inside it); not .current-price on purpose {% endcomment %}
+  <p class="pm-subtotal">
+    <span class="pm-subtotal__label">{{ 'premium.pdp.subtotal' | t }}</span>
+    <span
+      class="pm-subtotal__compare"
+      x-show="$store.qb.currentCompare > $store.qb.currentPrice"
+      x-cloak
+      x-text="$store.qb.money($store.qb.currentCompare)"></span>
+    <span class="pm-subtotal__value" x-text="$store.qb.money($store.qb.currentPrice)">{{ selected_variant.price | money }}</span>
+  </p>
+
+  {% comment %} Add to cart form: real product-form component; bundle items are
+     submitted as items[0..n] hidden inputs kept in sync by Alpine {% endcomment %}
+  <product-form
+    @submit.capture="$store.qb.prepareSubmit($event)"
+    class="product-form pm-qb__form block"
+    data-hide-errors="{{ gift_card_recipient_feature_active }}"
+    data-section-id="{{ section.id }}">
+    <div class="product-form__error-message-wrapper" role="alert" hidden>
+      <span class="product-form__error-message"></span>
+    </div>
+
+    {%- form 'product'
+      , product
+      , id: product_form_id
+      , class: 'form'
+      , novalidate: 'novalidate'
+      , data-type: 'add-to-cart-form'
+    -%}
+      {% comment %} Required by product-form.js's constructor (looks up [name=id]);
+         disabled right before submit so it doesn't collide with items[0] below {% endcomment %}
+      <input
+        type="hidden"
+        name="id"
+        id="product-variant-id"
+        value="{{ selected_variant.id }}"
+        :value="$store.qb.selectedVariantId"
+        class="product-variant-id">
+
+      {% comment %} slot 0: the pre-selected current product {% endcomment %}
+      <input type="hidden" name="items[0][id]" :value="$store.qb.selectedVariantId">
+      <input type="hidden" name="items[0][quantity]" value="1">
+
+      {% comment %} slots 1..n: customer-chosen bonus fragrances; the same fragrance may appear more than once {% endcomment %}
+      <template x-for="(p, idx) in $store.qb.selectedProducts.slice(0, $store.qb.bundleLength)" :key="idx">
+        <span>
+          <input type="hidden" :name="'items[' + (idx + 1) + '][id]'" :value="p.variant ? p.variant.id : ''">
+          <input type="hidden" :name="'items[' + (idx + 1) + '][quantity]'" value="1">
+          <input type="hidden" :name="'items[' + (idx + 1) + '][properties][Bundle Fragrance]'" :value="p.name">
+        </span>
+      </template>
+
+      <button
+        type="submit"
+        name="add"
+        value="1"
+        :aria-disabled="$store.qb.unitAvailable ? 'false' : 'true'"
+        :class="{ 'is-incomplete': !$store.qb.isComplete, 'is-soldout': !$store.qb.unitAvailable }"
+        class="atc-button cta_product_from_submit_btn button button--full-width button--primary pm-btn pm-btn--primary pm-atc"
+        aria-label="{{ add_to_cart_label }}">
+        <span
+          x-show="!$store.qb.isComplete"
+          x-cloak
+          x-text="$store.qb.chooseMoreText()"></span>
+
+        <span x-show="$store.qb.isComplete" x-text="$store.qb.unitAvailable ? $store.qb.labels.addToCart : $store.qb.labels.soldOut">{{ add_to_cart_label }}</span>
+
+        {%- render 'loading-spinner' -%}
+      </button>
+    {%- endform -%}
+  </product-form>
+
+  {%- comment -%} FUEL_06 product page entry, see snippets/fuel06-pdp-link.liquid (gated per template there). After the buy form, before the payment strip, as on the sister stores. {%- endcomment -%}
+  {%- render 'fuel06-pdp-link' -%}
+
+  {% comment %} Payment methods strip (BLIK, Klarna, cards) {% endcomment %}
+  <img
+    class="pm-paybadge"
+    src="{{ 'payment-badge.svg' | asset_url }}"
+    alt="{{ 'premium.pdp.payment_methods' | t }}"
+    width="300"
+    height="40"
+    loading="lazy">
+
+  {% render 'shipping-badges' %}
+
+  {% comment %} Bonus fragrance modal: teleported to <body> so it sits above the header and sticky bars {% endcomment %}
+  <template x-teleport="body">
+  <div
+    x-show="$store.qb.showModal"
+    x-cloak
+    class="pm-modal"
+    @keydown.escape.window="$store.qb.showModal = false">
+    <div
+      class="pm-modal__sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pm-modal-title-{{ section.id }}"
+      @click.away="$store.qb.showModal = false">
+      <button
+        type="button"
+        @click="$store.qb.showModal = false"
+        class="pm-modal__close"
+        aria-label="{{ 'premium.general.close' | t }}">
+        {% render 'pm-icon', icon: 'close', size: 18, stroke: 1.5 %}
+      </button>
+
+      <div class="pm-modal__head">
+        <h2 class="pm-h3 pm-modal__title" id="pm-modal-title-{{ section.id }}">
+          <span x-show="$store.qb.remaining === 0">{{ 'premium.pdp.selection_complete' | t }}</span>
+          <span x-show="$store.qb.remaining > 0" x-text="$store.qb.chooseMoreText()"></span>
+        </h2>
+        <p class="pm-modal__sub">
+          <span x-text="$store.qb.scentsInBundleText($store.qb.selectedTier)"></span>
+          <span aria-hidden="true">&middot;</span>
+          <span x-text="$store.qb.sizeLabelText()"></span>
+        </p>
+      </div>
+
+      <div class="pm-modal__tools">
+        <div class="pm-modal__chips" role="group">
+          <button
+            type="button"
+            @click="$store.qb.activeCategory = 'All'"
+            :class="{ 'is-active': $store.qb.activeCategory === 'All' }"
+            :aria-pressed="$store.qb.activeCategory === 'All' ? 'true' : 'false'"
+            class="pm-chip">{{ 'premium.pdp.filter_bestsellers' | t }}</button>
+          <button
+            type="button"
+            @click="$store.qb.activeCategory = 'men'"
+            :class="{ 'is-active': $store.qb.activeCategory === 'men' }"
+            :aria-pressed="$store.qb.activeCategory === 'men' ? 'true' : 'false'"
+            class="pm-chip">{{ 'premium.pdp.for_him' | t }}</button>
+          <button
+            type="button"
+            @click="$store.qb.activeCategory = 'women'"
+            :class="{ 'is-active': $store.qb.activeCategory === 'women' }"
+            :aria-pressed="$store.qb.activeCategory === 'women' ? 'true' : 'false'"
+            class="pm-chip">{{ 'premium.pdp.for_her' | t }}</button>
+        </div>
+
+        <div class="pm-modal__search">
+          <span class="pm-modal__search-icon">{% render 'pm-icon', icon: 'search', size: 16, stroke: 1.5 %}</span>
+          <input
+            type="search"
+            placeholder="{{ 'premium.pdp.search_placeholder' | t }}"
+            aria-label="{{ 'premium.pdp.search_placeholder' | t }}"
+            x-model="$store.qb.searchText"
+            class="pm-modal__input">
+        </div>
+      </div>
+
+      {% comment %} Product list: only scents in stock in the chosen size and strength {% endcomment %}
+      <div class="pm-modal__list">
+          <template x-for="product in $store.qb.availableProducts" :key="product.id">
+            <template
+              x-if="$store.qb.pickAvailable(product) &&
+                (product.gender === $store.qb.activeCategory || $store.qb.activeCategory === 'All') &&
+                ($store.qb.searchText === '' || product.name.toLowerCase().includes($store.qb.searchText.toLowerCase()) || (product.inspiration_name && product.inspiration_name.toLowerCase().includes($store.qb.searchText.toLowerCase())))">
+              <div
+                @click="$store.qb.countOf(product.id) || $store.qb.pickProduct(product)"
+                :class="{ 'is-picked': $store.qb.countOf(product.id) }"
+                class="pm-pick">
+                <img
+                  class="pm-pick__thumb"
+                  :src="product.image"
+                  :alt="product.name"
+                  width="56"
+                  height="56"
+                  loading="lazy">
+                <div class="pm-pick__body">
+                  <span class="pm-pick__name" x-text="product.name"></span>
+                  <span class="pm-pick__insp pm-dmeta" x-show="product.inspiration_name">
+                    <template x-if="product.designer_image">
+                      <span class="pm-dthumb" aria-hidden="true"><img :src="product.designer_image" alt="" width="48" height="48" loading="lazy" class="pm-dthumb__img"></span>
+                    </template>
+                    <span class="pm-dmeta__text" x-text="$store.qb.inspiredByText(product.inspiration_name)"></span>
+                  </span>
+                  <div class="pm-pick__tags">
+                    <span
+                      x-show="product.bestseller"
+                      class="pm-pick__tag pm-pick__tag--best">{{ 'premium.pdp.bestseller' | t }}</span>
+                    <span
+                      x-show="product.gender === 'men'"
+                      class="pm-pick__tag">{{ 'premium.pdp.for_him' | t }}</span>
+                    <span
+                      x-show="product.gender === 'women'"
+                      class="pm-pick__tag">{{ 'premium.pdp.for_her' | t }}</span>
+                    <span
+                      x-show="product.occasion"
+                      x-text="product.occasion"
+                      class="pm-pick__tag"></span>
+                  </div>
+                </div>
+                <div class="pm-pick__side">
+                  <span class="pm-pick__size" x-text="$store.qb.selectedSizeLabel"></span>
+                  <button
+                    x-show="!$store.qb.countOf(product.id)"
+                    type="button"
+                    @click.stop="$store.qb.pickProduct(product)"
+                    :aria-label="$store.qb.addProductLabel(product.name)"
+                    class="pm-pick__add">{% render 'pm-icon', icon: 'plus', size: 16, stroke: 1.5 %}</button>
+                  <div
+                    x-show="$store.qb.countOf(product.id)"
+                    class="pm-pick__stepper">
+                    <button
+                      type="button"
+                      @click.stop="$store.qb.unpickProduct(product)"
+                      :aria-label="$store.qb.removeProductLabel(product.name)"
+                      class="pm-pick__step">{% render 'pm-icon', icon: 'minus', size: 14, stroke: 1.5 %}</button>
+                    <span
+                      class="pm-pick__count"
+                      aria-live="polite"
+                      x-text="$store.qb.countOf(product.id)"></span>
+                    <button
+                      type="button"
+                      @click.stop="$store.qb.pickProduct(product)"
+                      :aria-label="$store.qb.addProductLabel(product.name)"
+                      class="pm-pick__step pm-pick__step--plus">{% render 'pm-icon', icon: 'plus', size: 14, stroke: 1.5 %}</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </template>
+      </div>
+
+      <div class="pm-modal__foot">
+        <button
+          type="button"
+          @click="$store.qb.showModal = false"
+          class="pm-btn pm-btn--primary pm-modal__done">
+          {{ 'premium.general.done' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+  </template>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', function () {
+    {%- comment -%} Plural forms are rendered per count by Shopify (Polish: one / few / many), so JS never builds them {%- endcomment %}
+    var I18N = {
+      perBottle: {{ 'premium.pdp.per_bottle' | t: price: '%p' | json }},
+      savePercent: {{ 'premium.pdp.save_percent' | t: percent: '%n' | json }},
+      sizeLabel: {{ 'premium.pdp.size_label' | t: size: '%s' | json }},
+      inspiredBy: {{ 'premium.card.inspired_by' | t: name: '%n' | json }},
+      addProduct: {{ 'premium.pdp.add_product' | t: name: '%n' | json }},
+      removeProduct: {{ 'premium.pdp.remove_product' | t: name: '%n' | json }},
+      soldOut: {{ sold_out_label | json }},
+      scents: { {%- for n in (1..5) -%}"{{ n }}": {{ 'premium.pdp.scents_in_bundle' | t: count: n | json }}{%- unless forloop.last -%},{%- endunless -%}{%- endfor -%} },
+      left: { {%- for n in (1..5) -%}"{{ n }}": {{ 'premium.pdp.left_to_choose' | t: count: n | json }}{%- unless forloop.last -%},{%- endunless -%}{%- endfor -%} },
+      choose: { {%- for n in (1..5) -%}"{{ n }}": {{ 'premium.pdp.choose_n_more' | t: count: n | json }}{%- unless forloop.last -%},{%- endunless -%}{%- endfor -%} }
+    };
+
+    function fill(template, token, value) {
+      return String(template).split(token).join(String(value));
+    }
+
+    function plural(map, n) {
+      return map[String(n)] || fill(map['5'], '5', n);
+    }
+
+    function formatMoney(cents) {
+      if (typeof window.pmMoney === 'function') return window.pmMoney(cents);
+      return ((Number(cents) || 0) / 100).toFixed(2);
+    }
+
+    Alpine.store('qb', {
+      labels: {
+        change: {{ 'premium.general.change' | t | json }},
+        select: {{ 'premium.general.select' | t | json }},
+        addToCart: {{ add_to_cart_label | json }},
+        soldOut: {{ sold_out_label | json }}
+      },
+      variants: {
+        {% for variant in product.variants %}
+          {{ variant.title | downcase | remove: ' ' | json }}: {
+            id: {{ variant.id }},
+            label: {{ variant.title | json }},
+            price: {{ variant.price }},
+            compare: {{ variant.compare_at_price | default: 0 }},
+            available: {{ variant.available | json }},
+            options: {{ variant.options | json }}
+          },
+        {% endfor %}
+      },
+      selectedSize: {{ selected_size_key | json }},
+      selectedVariantId: {{ selected_variant.id }},
+
+      {% comment %} pay = bottles the customer pays for; total = bottles shipped (rest free via the automatic discount) {% endcomment %}
+      tiers: [
+        { key: 't1', label: 'Jeden flakon', pay: 1, total: 1, badge: '', note: 'Tylko jeden flakon' },
+        { key: 't2', label: '2 + 1 GRATIS', pay: 2, total: 3, badge: '' },
+        { key: 't3', label: '3 + 2 GRATIS', pay: 3, total: 5, badge: {{ 'premium.pdp.best_value' | t | json }} }
+      ],
+      selectedTierKey: 't1',
+
+      showModal: false,
+      activeCategory: 'All',
+      searchText: '',
+      selectedProducts: [],
+
+      mainProduct: {
+        id: {{ product.id }},
+        name: {% render 'polish-store-text', text: product.title, format: 'json' %},
+        image: {{ product.featured_image | image_url: width: 120, height: 120 | json }},
+        inspiration_name: {{ main_inspiration | json }},
+        designer_image: {% if main_designer != blank %}{{ main_designer | image_url: width: 96 | json }}{% else %}''{% endif %}
+      },
+
+      availableProducts: [
+        {% for bonus_product in bonus_pool %}
+          {%- liquid
+            assign bonus_id_key = ',' | append: bonus_product.id | append: ','
+            if bonus_seen_ids contains bonus_id_key
+              continue
+            endif
+            assign bonus_seen_ids = bonus_seen_ids | append: bonus_product.id | append: ','
+            assign bonus_inspiration = bonus_product.metafields.custom.inspired_by.value.name | default: '' | strip
+            assign bonus_designer = bonus_product.metafields.custom.inspired_by.value.image.value
+            assign bonus_occ_field = bonus_product.metafields.custom.occasion
+            assign bonus_occasion = ''
+            if bonus_occ_field != blank
+              if bonus_occ_field.type contains 'list.'
+                assign bonus_occasion = bonus_occ_field.value | first
+              else
+                assign bonus_occasion = bonus_occ_field.value
+              endif
+            endif
+            assign bonus_gender = ''
+            assign bonus_best = false
+            for tag in bonus_product.tags
+              assign tag_key = tag | downcase | remove: ' '
+              if tag_key == 'bestseller'
+                assign bonus_best = true
+              elsif tag_key == 'fürmänner' or tag_key == 'fuer-maenner' or tag_key == 'dla-mezczyzn'
+                assign bonus_gender = 'men'
+              elsif tag_key == 'fürfrauen' or tag_key == 'fuer-frauen' or tag_key == 'dla-kobiet'
+                assign bonus_gender = 'women'
+              endif
+            endfor
+          -%}
+          {
+            id: {{ bonus_product.id }},
+            name: {% render 'polish-store-text', text: bonus_product.title, format: 'json' %},
+            image: {{ bonus_product.featured_image | image_url: width: 120, height: 120 | json }},
+            inspiration_name: {{ bonus_inspiration | json }},
+            designer_image: {% if bonus_designer != blank %}{{ bonus_designer | image_url: width: 96 | json }}{% else %}''{% endif %},
+            occasion: {{ bonus_occasion | strip | json }},
+            gender: {{ bonus_gender | json }},
+            bestseller: {{ bonus_best | json }},
+            variants: {
+              {% for variant in bonus_product.variants %}
+                {{ variant.title | downcase | remove: ' ' | json }}: { id: {{ variant.id }}, title: {{ variant.title | json }}, price: {{ variant.price }}, compare: {{ variant.compare_at_price | default: 0 }}, available: {{ variant.available | json }} },
+              {% endfor %}
+            }
+          },
+        {% endfor %}
+      ],
+
+      get selectedTier() {
+        var key = this.selectedTierKey;
+        return this.tiers.find(function (t) { return t.key === key; }) || this.tiers[0];
+      },
+      {% comment %} slot 0 is the pre-selected current product; the customer fills the rest {% endcomment %}
+      get bundleLength() { return Math.max(0, this.selectedTier.total - 1); },
+      get remaining() { return Math.max(0, this.bundleLength - this.selectedProducts.length); },
+      get isComplete() { return this.remaining === 0; },
+      get unit() { return this.variants[this.selectedSize] || Object.values(this.variants)[0]; },
+      get unitAvailable() { return !!(this.unit && this.unit.available); },
+      get selectedSizeLabel() { return this.unit ? this.unit.label : ''; },
+      get unitCompare() {
+        return this.unit.compare > this.unit.price ? this.unit.compare : this.unit.price;
+      },
+      get currentPrice() { return this.tierPrice(this.selectedTier); },
+      get currentCompare() { return this.tierCompare(this.selectedTier); },
+      get unavailablePicks() {
+        return this.selectedProducts.slice(0, this.bundleLength).filter(function (p) { return p.unavailable; });
+      },
+      get canSubmit() { return this.isComplete && this.unitAvailable && this.unavailablePicks.length === 0; },
+
+      {% comment %} Every bottle in a tier: the main one, then the chosen free scents (selected tier only),
+         empty slots counted at the main bottle's price {% endcomment %}
+      bottles: function (t) {
+        var main = { price: this.unit.price, compare: this.unit.compare };
+        var out = [main];
+        var picks = t.key === this.selectedTierKey ? this.selectedProducts : [];
+        for (var i = 0; i < t.total - 1; i++) {
+          var v = picks[i] && picks[i].variant;
+          out.push(v && typeof v.price === 'number' ? { price: v.price, compare: v.compare } : main);
+        }
+        return out;
+      },
+      {% comment %} Same maths as the cart: the automatic discount makes the (total - pay) cheapest bottles free {% endcomment %}
+      tierPrice: function (t) {
+        var prices = this.bottles(t).map(function (b) { return b.price; }).sort(function (a, b) { return a - b; });
+        return prices.slice(t.total - t.pay).reduce(function (sum, p) { return sum + p; }, 0);
+      },
+      tierCompare: function (t) {
+        return this.bottles(t).reduce(function (sum, b) { return sum + (b.compare > b.price ? b.compare : b.price); }, 0);
+      },
+      perBottle: function (t) { return Math.round(this.tierPrice(t) / t.total); },
+      savingsPercent: function (t) {
+        var full = this.tierCompare(t);
+        if (full <= this.tierPrice(t)) return 0;
+        return Math.round((full - this.tierPrice(t)) / full * 100);
+      },
+      money: function (cents) { return formatMoney(cents || 0); },
+
+      {% comment %} Text helpers (strings come from the locale files, rendered above) {% endcomment %}
+      perBottleText: function (t) { return fill(I18N.perBottle, '%p', this.money(this.perBottle(t))); },
+      saveText: function (t) { return fill(I18N.savePercent, '%n', this.savingsPercent(t)); },
+      scentsInBundleText: function (t) { return plural(I18N.scents, t.total); },
+      leftToChooseText: function () { return plural(I18N.left, this.remaining); },
+      chooseMoreText: function () { return plural(I18N.choose, this.remaining); },
+      sizeLabelText: function () { return fill(I18N.sizeLabel, '%s', this.selectedSizeLabel); },
+      inspiredByText: function (name) { return fill(I18N.inspiredBy, '%n', name); },
+      addProductLabel: function (name) { return fill(I18N.addProduct, '%n', name); },
+      removeProductLabel: function (name) { return fill(I18N.removeProduct, '%n', name); },
+      soldOutInSizeText: function () { return I18N.soldOut + ' (' + this.sizeLabelText() + ')'; },
+
+      isSizeAvailable: function (key) {
+        return !!(this.variants[key] && this.variants[key].available);
+      },
+
+      {% comment %} Option picker: true when the chosen variant carries this value in this option {% endcomment %}
+      isOptionSelected: function (index, value) {
+        return !!(this.unit && this.unit.options && this.unit.options[Number(index)] === value);
+      },
+
+      {% comment %} Picks the in-stock variant with this value and the other options as they are now; when that
+         combination is sold out, the first in-stock variant with this value (the other option follows). A value
+         with nothing in stock does nothing (its button is greyed out). {% endcomment %}
+      selectOption: function (index, value) {
+        index = Number(index);
+        var variants = this.variants;
+        var wanted = (this.unit && this.unit.options ? this.unit.options : []).slice();
+        wanted[index] = value;
+        var keys = Object.keys(variants);
+        var key = keys.find(function (k) {
+          var v = variants[k];
+          return v.available && v.options && v.options.every(function (o, i) { return o === wanted[i]; });
+        }) || keys.find(function (k) {
+          var v = variants[k];
+          return v.available && v.options && v.options[index] === value;
+        });
+        if (key) this.selectSize(key);
+      },
+
+      {% comment %} Size part of a variant key ('100ml/20%' -> '100ml'), whatever the option order {% endcomment %}
+      sizeOf: function (key) {
+        var parts = String(key || '').split('/');
+        for (var i = 0; i < parts.length; i++) {
+          var m = parts[i].match(/\d+ml/);
+          if (m) return m[0];
+        }
+        return parts[0];
+      },
+
+      {% comment %} Strength part of a variant key ('100ml/24%' -> '24%'); no strength option = the standard 20% {% endcomment %}
+      strengthOf: function (key) {
+        var parts = String(key || '').split('/');
+        for (var i = 0; i < parts.length; i++) {
+          var m = parts[i].match(/\d+%/);
+          if (m) return m[0];
+        }
+        return '20%';
+      },
+
+      {% comment %} A free bottle is the same size AND strength as the main bottle: 20% bundles take any scent
+         (size-only scents are 20%), 24% / 30% bundles only the scents that have that strength {% endcomment %}
+      bonusVariant: function (product, key) {
+        var size = this.sizeOf(key);
+        var strength = this.strengthOf(key);
+        var self = this;
+        var match = null;
+        Object.keys(product.variants).some(function (k) {
+          if (self.sizeOf(k) === size && self.strengthOf(k) === strength) { match = product.variants[k]; return true; }
+          return false;
+        });
+        return match;
+      },
+
+      {% comment %} A bonus scent can only be picked when it is in stock in the chosen size {% endcomment %}
+      pickAvailable: function (product) {
+        var v = this.bonusVariant(product, this.selectedSize);
+        return !!(v && v.available);
+      },
+
+      selectSize: function (key) {
+        if (!this.isSizeAvailable(key)) return;
+        this.selectedSize = key;
+        this.selectedVariantId = this.variants[key].id;
+        var input = document.getElementById('product-variant-id');
+        if (input) input.value = this.variants[key].id;
+        var self = this;
+        this.selectedProducts.forEach(function (p) {
+          var v = self.bonusVariant(p, key);
+          p.variant = v || null;
+          p.unavailable = !(v && v.available);
+        });
+        this.showError('');
+      },
+
+      selectTier: function (key) {
+        this.selectedTierKey = key;
+        if (this.selectedProducts.length > this.bundleLength) {
+          this.selectedProducts.splice(this.bundleLength);
+        }
+        this.showError('');
+      },
+
+      {% comment %} Slot 0 = pre-selected current product; slots 1..n = customer picks (null until chosen) {% endcomment %}
+      slotList: function (tier) {
+        var out = [{ product: this.mainProduct, preselected: true }];
+        var need = Math.max(0, tier.total - 1);
+        for (var i = 0; i < need; i++) {
+          out.push({ product: this.selectedProducts[i] || null, preselected: false });
+        }
+        return out;
+      },
+
+      openModal: function () { this.showModal = true; },
+
+      countOf: function (id) {
+        return this.selectedProducts.filter(function (p) { return p.id === id; }).length;
+      },
+
+      {% comment %} Adds one bottle of this fragrance (repeats allowed); closes the modal when the bundle is full {% endcomment %}
+      pickProduct: function (product) {
+        if (this.selectedProducts.length >= this.bundleLength) return;
+        if (!this.pickAvailable(product)) return;
+
+        var picked = Object.assign({}, product);
+        picked.variant = this.bonusVariant(product, this.selectedSize);
+        picked.unavailable = false;
+        this.selectedProducts.push(picked);
+
+        if (this.selectedProducts.length >= this.bundleLength) this.showModal = false;
+      },
+
+      {% comment %} Removes the last bottle of this fragrance {% endcomment %}
+      unpickProduct: function (product) {
+        for (var i = this.selectedProducts.length - 1; i >= 0; i--) {
+          if (this.selectedProducts[i].id === product.id) {
+            this.selectedProducts.splice(i, 1);
+            return;
+          }
+        }
+      },
+
+      syncGlobalPrices: function () {
+        var priceText = this.money(this.currentPrice);
+        var compareText = this.money(this.currentCompare);
+        var hasCompare = this.currentCompare > this.currentPrice;
+
+        document.querySelectorAll('.current-price').forEach(function (el) {
+          el.textContent = priceText;
+        });
+        document.querySelectorAll('.compare-price').forEach(function (el) {
+          el.textContent = compareText;
+          el.style.display = hasCompare ? '' : 'none';
+        });
+      },
+
+      {% comment %} Shows (or clears) a message in product-form.js's own error slot {% endcomment %}
+      showError: function (message) {
+        var form = document.getElementById({{ product_form_id | json }});
+        var host = form ? form.closest('product-form') : null;
+        var wrapper = host ? host.querySelector('.product-form__error-message-wrapper') : null;
+        if (!wrapper) return;
+        var text = wrapper.querySelector('.product-form__error-message');
+        if (text) text.textContent = message || '';
+        wrapper.toggleAttribute('hidden', !message);
+      },
+
+      {% comment %} Runs on the submit event's capture phase, before product-form.js's
+         own submit handler on the inner <form>: blocks the submit while the bundle
+         isn't complete or a picked scent is sold out in the chosen size, and clears
+         the legacy "id" field so it can't collide with "items[0][id]" {% endcomment %}
+      prepareSubmit: function (evt) {
+        if (!this.isComplete) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          this.openModal();
+          return;
+        }
+        if (!this.canSubmit) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          var that = this;
+          var parts = this.unavailablePicks.map(function (p) { return p.name + ': ' + that.soldOutInSizeText(); });
+          if (!this.unitAvailable) parts.unshift(this.mainProduct.name + ': ' + this.soldOutInSizeText());
+          this.showError(parts.join('. '));
+          return;
+        }
+        this.showError('');
+        var idInput = evt.target.querySelector('[name="id"]');
+        if (idInput) idInput.disabled = true;
+      }
+    });
+  });
+</script>

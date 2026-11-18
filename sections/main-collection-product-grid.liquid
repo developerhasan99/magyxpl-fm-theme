@@ -1,0 +1,763 @@
+{{ 'template-collection.css' | asset_url | stylesheet_tag }}
+{{ 'component-card.css' | asset_url | stylesheet_tag }}
+{{ 'component-price.css' | asset_url | stylesheet_tag }}
+
+{% if section.settings.image_shape == 'blob' %}
+  {{ 'mask-blobs.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+
+{%- unless section.settings.quick_add == 'none' -%}
+  {{ 'quick-add.css' | asset_url | stylesheet_tag }}
+{%- endunless -%}
+
+{%- if section.settings.quick_add == 'standard' -%}
+  <script src="{{ 'quick-add.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- if section.settings.quick_add == 'bulk' -%}
+  <script src="{{ 'quick-add-bulk.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'quantity-popover.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'price-per-item.js' | asset_url }}" defer="defer"></script>
+  <script src="{{ 'quick-order-list.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- liquid
+  # toolbar_style "pills" (default): centred pill dropdowns + search (snippets/facets.liquid filter_type
+  # 'pills', snippets/pm-collection-search.liquid); "classic": the toolbar driven by filter_type.
+  assign pm_pills = true
+  if section.settings.toolbar_style == 'classic'
+    assign pm_pills = false
+  endif
+-%}
+
+{%- comment -%}
+  Infinite scroll (and the search's "load every page"): assets/pm-collection-grid-loader.js reads
+  #load-more-btn[data-next-url] and #loading-indicator and re-arms after facets.js replaces the grid.
+  assets/pm-collection-search.js drives the pill dropdowns and the search; loaded once here.
+{%- endcomment -%}
+<script src="{{ 'pm-collection-grid-loader.js' | asset_url }}" defer="defer"></script>
+{%- if pm_pills or section.settings.enable_search -%}
+  <script src="{{ 'pm-collection-search.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+<div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }} pm-collection">
+  {%- paginate collection.products by section.settings.products_per_page -%}
+    {%- if pm_pills -%}
+      {%- comment -%}
+        Pill toolbar: Sort + one pill per storefront filter, the search field, then the product count.
+        #ProductCount is required by facets.js (it swaps its HTML after every filter and sort).
+      {%- endcomment -%}
+      <div class="pm-ctoolbar page-width">
+        {%- if section.settings.enable_filtering or section.settings.enable_sorting -%}
+          <aside
+            class="pm-ctoolbar__facets"
+            id="main-collection-filters"
+            data-id="{{ section.id }}"
+            aria-label="{{ 'products.facets.filter_and_sort' | t }}"
+          >
+            {% render 'facets'
+              , results: collection
+              , enable_filtering: section.settings.enable_filtering
+              , enable_sorting: section.settings.enable_sorting
+              , filter_type: 'pills'
+              , paginate: paginate
+              , clear_label: section.settings.filters_clear_label
+            %}
+          </aside>
+        {%- endif -%}
+
+        {%- if section.settings.enable_search -%}
+          {% render 'pm-collection-search', st: section.settings, section_id: section.id %}
+        {%- endif -%}
+
+        <p class="pm-ctoolbar__count" role="status">
+          <span id="ProductCount">
+            {%- if collection.results_count -%}
+              {{ 'templates.search.results_with_count' | t: terms: collection.terms, count: collection.results_count }}
+            {%- elsif collection.products_count == collection.all_products_count -%}
+              {{ 'premium.collection.products_count' | t: count: collection.products_count }}
+            {%- else -%}
+              {{
+                'products.facets.product_count'
+                | t: product_count: collection.products_count, count: collection.all_products_count
+              }}
+            {%- endif -%}
+          </span>
+        </p>
+      </div>
+    {% comment %} Sort is the first tabbable element when filter type is vertical {% endcomment %}
+    {%- elsif section.settings.enable_sorting and section.settings.filter_type == 'vertical' -%}
+      <facet-filters-form class="facets facets-vertical-sort page-width small-hide">
+        <form class="facets-vertical-form" id="FacetSortForm">
+          <div class="facet-filters sorting caption">
+            <div class="facet-filters__field">
+              <h2 class="facet-filters__label caption-large text-body">
+                <label for="SortBy">{{ 'products.facets.sort_by_label' | t }}</label>
+              </h2>
+              <div class="select">
+                {%- assign sort_by = collection.sort_by | default: collection.default_sort_by -%}
+                <select
+                  name="sort_by"
+                  class="facet-filters__sort select__select caption-large"
+                  id="SortBy"
+                  aria-describedby="a11y-refresh-page-message">
+                  {%- for option in collection.sort_options -%}
+                    <option
+                      value="{{ option.value | escape }}"
+                      {% if option.value == sort_by %}
+                      selected="selected"
+                      {% endif %}>
+                      {{ option.name | escape }}
+                    </option>
+                  {%- endfor -%}
+                </select>
+                {% render 'icon-caret' %}
+              </div>
+            </div>
+          </div>
+
+          <div class="product-count-vertical light" role="status">
+            <h2 class="product-count__text text-body">
+              <span id="ProductCountDesktop">
+                {%- if collection.results_count -%}
+                  {{
+                    'templates.search.results_with_count' | t: terms: collection.terms, count: collection.results_count
+                  }}
+                {%- elsif collection.products_count == collection.all_products_count -%}
+                  {{ 'premium.collection.products_count' | t: count: collection.products_count }}
+                {%- else -%}
+                  {{
+                    'products.facets.product_count' | t: product_count: collection.products_count, count: collection.all_products_count
+                  }}
+                {%- endif -%}
+              </span>
+            </h2>
+            {%- render 'loading-spinner' -%}
+          </div>
+        </form>
+      </facet-filters-form>
+    {%- endif -%}
+
+    <div class="{% if pm_pills == false and section.settings.filter_type == 'vertical' %} facets-vertical page-width{% endif %}">
+      {%- unless pm_pills -%}
+        {{ 'component-facets.css' | asset_url | stylesheet_tag }}
+      {%- endunless -%}
+      <script src="{{ 'facets.js' | asset_url }}" defer="defer"></script>
+      {%- unless pm_pills -%}
+        {%- if section.settings.enable_filtering or section.settings.enable_sorting -%}
+          <aside
+            aria-labelledby="verticalTitle"
+            class="facets-wrapper{% unless section.settings.enable_filtering %} facets-wrapper--no-filters{% endunless %}{% if section.settings.filter_type != 'vertical' %} page-width{% endif %}"
+            id="main-collection-filters"
+            data-id="{{ section.id }}">
+            {% render 'facets'
+              , results: collection
+              , enable_filtering: section.settings.enable_filtering
+              , enable_sorting: section.settings.enable_sorting
+              , filter_type: section.settings.filter_type
+              , paginate: paginate
+            %}
+          </aside>
+        {%- endif -%}
+
+        {%- if section.settings.enable_search -%}
+          <div class="pm-ctoolbar pm-ctoolbar--classic page-width">
+            {% render 'pm-collection-search', st: section.settings, section_id: section.id %}
+          </div>
+        {%- endif -%}
+      {%- endunless -%}
+
+      {%- assign fuel05_has_tiles = false -%}
+      {%- for b in section.blocks -%}
+        {%- if b.type == 'fuel05_ugc_video' -%}
+          {%- assign fuel05_has_tiles = true -%}
+          {%- break -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- comment -%}
+        The asset tags sit outside #ProductGridContainer on purpose: facets.js replaces
+        that container's innerHTML on every filter and sort, and a script tag inserted
+        through innerHTML never runs. fuel05-ugc.js arms itself and re-scans on its own,
+        so it only has to load once, here.
+      {%- endcomment -%}
+      {%- if fuel05_has_tiles -%}
+        {{ 'fuel05-ugc.css' | asset_url | stylesheet_tag }}
+        <script src="{{ 'fuel05-ugc.js' | asset_url }}" defer="defer"></script>
+      {%- endif -%}
+
+      <div
+        class="product-grid-container{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+        id="ProductGridContainer"
+        {% if settings.animations_reveal_on_scroll %}
+        data-cascade
+        {% endif %}>
+        {%- if collection.products.size == 0 -%}
+          <div
+            class="collection collection--empty page-width pm-collection__empty"
+            id="product-grid"
+            data-id="{{ section.id }}">
+            <div class="loading-overlay gradient"></div>
+            <div class="title-wrapper center">
+              <h2 class="title title--primary pm-h3 pm-collection__empty-title">
+                {{ 'sections.collection_template.empty' | t -}}
+              </h2>
+              <p class="pm-body pm-collection__empty-text">
+                {{
+                  'sections.collection_template.use_fewer_filters_html' | t: link: collection.url, class: 'pm-collection__empty-link'
+                }}
+              </p>
+              <a href="{{ collection.url }}" class="pm-btn pm-btn--secondary pm-collection__empty-cta">
+                {{ 'products.facets.clear_all' | t }}
+              </a>
+            </div>
+          </div>
+        {%- else -%}
+          <div class="collection{% if pm_pills or section.settings.filter_type != 'vertical' %} page-width{% endif %}">
+            <div class="loading-overlay gradient"></div>
+            <ul
+              id="product-grid"
+              data-id="{{ section.id }}"
+              data-pm-page="{{ paginate.current_page }}"
+              class="
+                grid_layout product-grid pm-collection__grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
+                grid--{{ section.settings.columns_desktop }}-col-desktop
+                {% if section.settings.quick_add == 'bulk' %} collection-quick-add-bulk{% endif %}
+              ">
+              {%- for product in collection.products -%}
+                {% assign product_position = forloop.index %}
+
+                {% for block in section.blocks %}
+                  {% if block.settings.position == product_position and paginate.current_page == 1 %}
+                    {% if block.type == 'quiz_promo_card' %}
+                      {% render 'quiz-promo-card'
+                        , block: block
+                        , product_position: product_position %}
+                      {% elsif block.type == 'fuel05_ugc_video' %}
+                      {%- comment -%}
+                        Page one only. Desktop emits 16 products plus 7 visible tiles per
+                        page and 23 does not divide by 4, so from page two the whole grid
+                        would start mid row and the tiles would land a column off the drawn
+                        3, 1, 2, 4, 3, 1, 2. Nothing can put them back without either
+                        changing the cell count per page or moving the tiles for desktop
+                        only, which then breaks mobile, where 16 plus 7 is odd as well. The
+                        design draws page one, so page one is what we ship.
+
+                        No audience tag setting on this block, unlike the product page one. A
+                        grid cell has no product of its own to test a tag against, and the
+                        tiles are only placed on collection.collection-lander-v1, which is
+                        assigned to Best Sellers, a single mixed collection. Reading the tag
+                        off collection.title there is either a no op or it blanks every tile,
+                        and a setting labelled for product tags that quietly tests a title
+                        would mislead whoever fills it in. The client's rule names product
+                        pages, "mens also for mens pages", so the filter lives there.
+                      {%- endcomment -%}
+                      {%- if paginate.current_page == 1 -%}
+                        <li
+                          class="grid__item fuel05-ugc fuel05-ugc--grid fuel05-ugc--grid-{{ block.settings.device | default: 'desktop' }}{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                          data-fuel05-row
+                          {% if settings.animations_reveal_on_scroll %}
+                          data-cascade
+                          style="display: none; --animation-order: {{ product_position }};"
+                          {% else %}
+                          style="display: none;"
+                          {% endif %}
+                          {{ block.shopify_attributes }}>
+                          {% render 'fuel05-ugc-tile'
+                            , video: block.settings.video
+                            , video_url: block.settings.video_url
+                            , poster: block.settings.video_poster
+                            , product_item: block.settings.product
+                          %}
+                        </li>
+                      {%- endif -%}
+                    {% else %}
+                      <li
+                        {{ block.shopify_attributes }}
+                        class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                        {% if settings.animations_reveal_on_scroll %}
+                        data-cascade
+                        style="--animation-order: {{ product_position }};"
+                        {% endif %}>
+                        {% render 'card-product'
+                          , card_product: block.settings.product
+                          , media_aspect_ratio: section.settings.image_ratio
+                          , image_shape: section.settings.image_shape
+                          , show_secondary_image: section.settings.show_secondary_image
+                          , show_vendor: section.settings.show_vendor
+                          , show_rating: section.settings.show_rating
+                          , lazy_load: lazy_load
+                          , skip_styles: skip_card_product_styles
+                          , quick_add: section.settings.quick_add
+                          , section_id: section.id
+                        %}
+                      </li>
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+                {% assign lazy_load = false %}
+                {%- if forloop.index > 2 -%}
+                  {%- assign lazy_load = true -%}
+                {%- endif -%}
+                {%- comment -%}
+                  Search haystack (assets/pm-collection-search.js): "title | inspiration | note | search terms".
+                  tryscent.eu: titles through polish-store-text (some admin titles are still German), inspiration
+                  from the custom.inspired_by metaobject, custom.nuta and custom.searchaniser.
+                {%- endcomment -%}
+                {%- capture pm_title -%}{% render 'polish-store-text', text: product.title %}{%- endcapture -%}
+                {%- capture pm_hay -%}
+                  {{- pm_title | strip -}} | {{ product.metafields.custom.inspired_by.value.name }} | {{ product.metafields.custom.nuta }} | {{ product.metafields.custom.searchaniser -}}
+                {%- endcapture -%}
+                {%- assign pm_hay = pm_hay | strip_newlines -%}
+                <li
+                  class="grid__item{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+                  data-pm-pid="{{ product.id }}"
+                  data-pm-hay="{{ pm_hay | escape }}"
+                  data-pm-tags="{{ product.tags | join: '|' | escape }}"
+                  data-pm-ref="{{ product.handle }}"
+                  {% if settings.animations_reveal_on_scroll %}
+                  data-cascade
+                  style="--animation-order: {{ forloop.index }};"
+                  {% endif %}>
+                  {% render 'product-card'
+                    , product: product
+                    , show_rating: section.settings.show_rating
+                    , lazy: lazy_load
+                  %}
+                </li>
+                {%- assign skip_card_product_styles = true -%}
+              {%- endfor -%}
+            </ul>
+            {%- if paginate.pages > 1 -%}
+              {%- if paginate.next -%}
+                {%- comment -%}
+                  Infinite scroll sentinel: #load-more-btn[data-next-url] and #loading-indicator are read by
+                  assets/pm-collection-grid-loader.js; keep the ids. data-pm-pages lets it fetch the remaining
+                  pages in parallel for the search; data-section-id is the section the pages are rendered with
+                  (tryscent.eu: the instance, not the file name, so page size and settings follow the template).
+                  Styles: assets/pm-collection.css (.pm-loadmore*, .pm-loader).
+                {%- endcomment -%}
+                <div class="load-more-wrapper pm-loadmore">
+                  <button
+                    id="load-more-btn"
+                    class="button pm-loadmore__btn"
+                    data-next-url="{{ paginate.next.url }}"
+                    data-pm-pages="{{ paginate.pages }}"
+                    data-pm-per-page="{{ section.settings.products_per_page }}"
+                    data-section-id="{{ section.id }}"
+                    tabindex="-1"
+                    aria-hidden="true">{{ 'premium.collection.load_more' | t }}</button>
+                  <div id="loading-indicator" class="pm-loadmore__status" role="status">
+                    <span class="pm-loader" aria-hidden="true"></span>
+                    {{ 'premium.collection.loading' | t }}
+                  </div>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endpaginate -%}
+  {% if section.settings.image_shape == 'arch' %}
+    {% render 'mask-arch' %}
+  {%- endif -%}
+</div>
+
+{% schema %}
+  {
+    "name": "t:sections.main-collection-product-grid.name",
+    "class": "section",
+    "settings": [
+      {
+        "type": "range",
+        "id": "products_per_page",
+        "min": 8,
+        "max": 36,
+        "step": 1,
+        "default": 16,
+        "label": "t:sections.main-collection-product-grid.settings.products_per_page.label"
+      },
+      {
+        "type": "range",
+        "id": "columns_desktop",
+        "min": 1,
+        "max": 6,
+        "step": 1,
+        "default": 4,
+        "label": "t:sections.main-collection-product-grid.settings.columns_desktop.label"
+      },
+      {
+        "type": "select",
+        "id": "columns_mobile",
+        "default": "2",
+        "label": "t:sections.main-collection-product-grid.settings.columns_mobile.label",
+        "options": [
+          {
+            "value": "1",
+            "label": "t:sections.main-collection-product-grid.settings.columns_mobile.options__1.label"
+          },
+          {
+            "value": "2",
+            "label": "t:sections.main-collection-product-grid.settings.columns_mobile.options__2.label"
+          }
+        ]
+      },
+      {
+        "type": "color_scheme",
+        "id": "color_scheme",
+        "label": "t:sections.all.colors.label",
+        "info": "t:sections.all.colors.has_cards_info",
+        "default": "scheme-1"
+      },
+      {
+        "type": "header",
+        "content": "t:sections.main-collection-product-grid.settings.header__3.content"
+      },
+      {
+        "type": "select",
+        "id": "image_ratio",
+        "options": [
+          {
+            "value": "adapt",
+            "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__1.label"
+          },
+          {
+            "value": "portrait",
+            "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__2.label"
+          },
+          {
+            "value": "square",
+            "label": "t:sections.main-collection-product-grid.settings.image_ratio.options__3.label"
+          }
+        ],
+        "default": "adapt",
+        "label": "t:sections.main-collection-product-grid.settings.image_ratio.label"
+      },
+      {
+        "type": "select",
+        "id": "image_shape",
+        "options": [
+          {
+            "value": "default",
+            "label": "t:sections.all.image_shape.options__1.label"
+          },
+          {
+            "value": "arch",
+            "label": "t:sections.all.image_shape.options__2.label"
+          },
+          {
+            "value": "blob",
+            "label": "t:sections.all.image_shape.options__3.label"
+          },
+          {
+            "value": "chevronleft",
+            "label": "t:sections.all.image_shape.options__4.label"
+          },
+          {
+            "value": "chevronright",
+            "label": "t:sections.all.image_shape.options__5.label"
+          },
+          {
+            "value": "diamond",
+            "label": "t:sections.all.image_shape.options__6.label"
+          },
+          {
+            "value": "parallelogram",
+            "label": "t:sections.all.image_shape.options__7.label"
+          },
+          {
+            "value": "round",
+            "label": "t:sections.all.image_shape.options__8.label"
+          }
+        ],
+        "default": "default",
+        "label": "t:sections.all.image_shape.label"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_secondary_image",
+        "default": false,
+        "label": "t:sections.main-collection-product-grid.settings.show_secondary_image.label"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_vendor",
+        "default": false,
+        "label": "t:sections.main-collection-product-grid.settings.show_vendor.label"
+      },
+      {
+        "type": "checkbox",
+        "id": "show_rating",
+        "default": false,
+        "label": "t:sections.main-collection-product-grid.settings.show_rating.label",
+        "info": "t:sections.main-collection-product-grid.settings.show_rating.info"
+      },
+      {
+        "type": "select",
+        "id": "quick_add",
+        "default": "none",
+        "label": "t:sections.main-collection-product-grid.settings.quick_add.label",
+        "options": [
+          {
+            "value": "none",
+            "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_1"
+          },
+          {
+            "value": "standard",
+            "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_2"
+          },
+          {
+            "value": "bulk",
+            "label": "t:sections.main-collection-product-grid.settings.quick_add.options.option_3"
+          }
+        ]
+      },
+      {
+        "type": "header",
+        "content": "t:sections.main-collection-product-grid.settings.header__1.content"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_filtering",
+        "default": true,
+        "label": "t:sections.main-collection-product-grid.settings.enable_filtering.label",
+        "info": "t:sections.main-collection-product-grid.settings.enable_filtering.info"
+      },
+      {
+        "type": "select",
+        "id": "filter_type",
+        "options": [
+          {
+            "value": "horizontal",
+            "label": "t:sections.main-collection-product-grid.settings.filter_type.options__1.label"
+          },
+          {
+            "value": "vertical",
+            "label": "t:sections.main-collection-product-grid.settings.filter_type.options__2.label"
+          },
+          {
+            "value": "drawer",
+            "label": "t:sections.main-collection-product-grid.settings.filter_type.options__3.label"
+          }
+        ],
+        "default": "horizontal",
+        "label": "t:sections.main-collection-product-grid.settings.filter_type.label"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_sorting",
+        "default": true,
+        "label": "t:sections.main-collection-product-grid.settings.enable_sorting.label"
+      },
+      {
+        "type": "select",
+        "id": "toolbar_style",
+        "label": "Toolbar style",
+        "info": "Pills: Sort and every storefront filter as centred dropdowns, search field under them. Classic: the filter layout above.",
+        "options": [
+          {
+            "value": "pills",
+            "label": "Pill dropdowns"
+          },
+          {
+            "value": "classic",
+            "label": "Classic"
+          }
+        ],
+        "default": "pills"
+      },
+      {
+        "type": "text",
+        "id": "filters_clear_label",
+        "label": "Remove filters link",
+        "default": "Usuń wszystko"
+      },
+      {
+        "type": "header",
+        "content": "Search"
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_search",
+        "default": true,
+        "label": "Show the search bar",
+        "info": "Filters this grid by scent name, number, brand, inspiration, family, season, occasion and tags. Loads the whole collection on first use."
+      },
+      {
+        "type": "text",
+        "id": "search_placeholder",
+        "default": "Szukaj: marka, zapach lub numer",
+        "label": "Placeholder"
+      },
+      {
+        "type": "text",
+        "id": "search_results_text",
+        "default": "Wyniki dla „[query]”: [count]",
+        "label": "Results text",
+        "info": "[count] and [query] are replaced."
+      },
+      {
+        "type": "text",
+        "id": "search_result_text",
+        "default": "Wyniki dla „[query]”: 1",
+        "label": "Single result text"
+      },
+      {
+        "type": "text",
+        "id": "search_empty_text",
+        "default": "Brak wyników dla „[query]”. Wpisz markę albo nazwę oryginału.",
+        "label": "No results text"
+      },
+      {
+        "type": "text",
+        "id": "search_loading_text",
+        "default": "Szukamy we wszystkich zapachach…",
+        "label": "Loading text"
+      },
+      {
+        "type": "text",
+        "id": "search_clear_label",
+        "default": "Wyczyść wyszukiwanie",
+        "label": "Clear button label"
+      },
+      {
+        "type": "header",
+        "content": "t:sections.all.padding.section_padding_heading"
+      },
+      {
+        "type": "range",
+        "id": "padding_top",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_top",
+        "default": 36
+      },
+      {
+        "type": "range",
+        "id": "padding_bottom",
+        "min": 0,
+        "max": 100,
+        "step": 4,
+        "unit": "px",
+        "label": "t:sections.all.padding.padding_bottom",
+        "default": 36
+      }
+    ],
+    "blocks": [
+      {
+        "type": "quiz_promo_card",
+        "name": "Qiz Promo Card",
+        "settings": [
+          {
+            "type": "number",
+            "id": "position",
+            "label": "Position"
+          },
+          {
+            "type": "text",
+            "id": "heading",
+            "label": "Heading",
+            "default": "Znajdź swój zapach w 2 minuty"
+          },
+          {
+            "type": "image_picker",
+            "id": "image",
+            "label": "Card Image"
+          },
+          {
+            "type": "url",
+            "id": "url",
+            "label": "Card URL"
+          },
+          {
+            "type": "text",
+            "id": "button_text",
+            "label": "Button Text"
+          }
+        ]
+      },
+      {
+        "type": "featured_product",
+        "name": "Featured Product",
+        "settings": [
+          {
+            "type": "number",
+            "id": "position",
+            "label": "Position"
+          },
+          {
+            "type": "product",
+            "id": "product",
+            "label": "Select Product"
+          }
+        ]
+      },
+      {
+        "type": "fuel05_ugc_video",
+        "name": "UGC video",
+        "settings": [
+          {
+            "type": "number",
+            "id": "position",
+            "label": "Position"
+          },
+          {
+            "type": "select",
+            "id": "device",
+            "label": "Show on",
+            "options": [
+              {
+                "value": "desktop",
+                "label": "Desktop"
+              },
+              {
+                "value": "mobile",
+                "label": "Mobile"
+              }
+            ],
+            "default": "desktop"
+          },
+          {
+            "type": "video",
+            "id": "video",
+            "label": "Video"
+          },
+          {
+            "type": "text",
+            "id": "video_url",
+            "label": "Video URL",
+            "info": "Used when no video is picked above"
+          },
+          {
+            "type": "image_picker",
+            "id": "video_poster",
+            "label": "Poster image"
+          },
+          {
+            "type": "product",
+            "id": "product",
+            "label": "Linked product"
+          }
+        ]
+      }
+    ]
+  }
+{% endschema %}

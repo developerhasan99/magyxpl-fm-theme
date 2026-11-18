@@ -1,0 +1,529 @@
+/* pm-s-reviews.css: theme-owned reviews (sections/pm-reviews.liquid + assets/pm-reviews.js).
+   Cards reuse .pm-review from pm-sections.css (white, 1px line, radius 4). This file: head row, summary (average +
+   5 to 1 histogram, rows filter the list), masonry columns, card details (title, photos, product line), load more,
+   photo dialog. Columns: 1 below 750, 2 from 750, data-cols (2 or 3) from 990 (set by pm-reviews.js).
+   Spacing 375 / 990: head gap 24 / 40, card gap 12 / 16, card padding 16 / 20. */
+.premium .pm-rv {
+  display: block;
+  box-sizing: border-box;
+  scroll-margin-top: calc(var(--header-height, 64px) + 16px);
+}
+
+.premium .pm-rv__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin: 0 0 24px;
+}
+
+.premium .pm-rv__heading {
+  margin: 0;
+}
+
+.premium .pm-rv__head-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--pm-ink);
+}
+
+/* Summary: average left, histogram right from 750; stacked at 375 */
+.premium .pm-rv__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 0 0 24px;
+  padding: 0 0 24px;
+  border-bottom: 1px solid var(--pm-line);
+}
+
+.premium .pm-rv__score {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.premium .pm-rv__avg {
+  margin: 0;
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--pm-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.premium .pm-rv__score-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.premium .pm-rv .pm-rv__score-stars svg {
+  width: 16px;
+  height: 16px;
+}
+
+.premium .pm-rv__based {
+  margin: 0;
+}
+
+.premium .pm-rv__hist {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.premium .pm-rv__bar {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--pm-radius-sm);
+  background: none;
+  color: var(--pm-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--pm-dur) var(--pm-ease);
+}
+
+.premium .pm-rv__bar:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 0;
+}
+
+.premium .pm-rv__bar[disabled] {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.premium .pm-rv__bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+.premium .pm-rv__bar-label svg {
+  display: block;
+  flex: none;
+}
+
+.premium .pm-rv__track {
+  position: relative;
+  display: block;
+  height: 6px;
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-line);
+  overflow: hidden;
+}
+
+.premium .pm-rv__fill {
+  display: block;
+  width: var(--pm-rv-pct, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--pm-ink);
+}
+
+.premium .pm-rv__bar-count {
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
+  color: var(--pm-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.premium .pm-rv__bar[aria-pressed="true"] .pm-rv__bar-count {
+  font-weight: 600;
+  color: var(--pm-ink);
+}
+
+.premium .pm-rv.is-filtered .pm-rv__bar[aria-pressed="false"]:not([disabled]) {
+  opacity: 0.45;
+}
+
+.premium .pm-rv.is-filtered .pm-rv__bar[aria-pressed="false"]:not([disabled]):hover {
+  opacity: 1;
+}
+
+/* Active filter line */
+.premium .pm-rv__filter:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0 0 16px;
+  color: var(--pm-ink);
+}
+
+.premium .pm-rv__clear {
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--pm-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.premium .pm-rv__clear:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+/* Masonry: pm-reviews.js builds one .pm-rv__col per column and drops each card into the shortest */
+.premium .pm-rv__list {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.premium .pm-rv__col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.premium .pm-rv .pm-review {
+  animation: pm-rv-in 0.4s var(--pm-ease) both;
+}
+
+@keyframes pm-rv-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.premium .pm-rv .pm-review__body {
+  gap: 10px;
+  padding: 16px;
+}
+
+.premium .pm-rv .pm-review__name {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.premium .pm-rv .pm-review__verified svg {
+  display: block;
+  flex: none;
+}
+
+.premium .pm-rv__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.premium .pm-rv__title {
+  margin: 0;
+  font-size: var(--pm-fs-body);
+  line-height: var(--pm-lh-body);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--pm-ink);
+}
+
+.premium .pm-rv__text {
+  margin: 0;
+  font-size: var(--pm-fs-body);
+  line-height: var(--pm-lh-body);
+  color: var(--pm-ink);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.premium .pm-rv__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premium .pm-rv__thumb {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--pm-line);
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-surface);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.premium .pm-rv__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.premium .pm-rv__thumb:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+}
+
+.premium .pm-rv__product {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--pm-muted);
+}
+
+.premium .pm-rv__product a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.premium .pm-rv__product a:hover,
+.premium .pm-rv__product a:focus-visible {
+  color: var(--pm-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.premium .pm-rv__note {
+  margin: 16px 0 0;
+  text-align: center;
+}
+
+.premium .pm-rv__more {
+  margin: 32px 0 0;
+  text-align: center;
+}
+
+/* Photo dialog (native <dialog>: Esc closes, a click on the backdrop closes in pm-reviews.js) */
+.premium .pm-rv__dialog {
+  box-sizing: border-box;
+  width: auto;
+  max-width: min(92vw, 720px);
+  max-height: 88vh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  overflow: hidden;
+}
+
+.premium .pm-rv__dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.premium .pm-rv__dialog-img {
+  display: block;
+  max-width: 100%;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.premium .pm-rv__dialog-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-white);
+  color: var(--pm-ink);
+  cursor: pointer;
+}
+
+.premium .pm-rv__dialog-close:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: -4px;
+}
+
+@media (min-width: 750px) {
+  .premium .pm-rv__summary {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+  }
+
+  .premium .pm-rv__hist {
+    max-width: 420px;
+  }
+
+  .premium .pm-rv__bar {
+    min-height: 28px;
+  }
+}
+
+@media (min-width: 990px) {
+  .premium .pm-rv__head {
+    margin-bottom: 40px;
+  }
+
+  .premium .pm-rv__summary {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+  }
+
+  .premium .pm-rv__avg {
+    font-size: 48px;
+    line-height: 52px;
+  }
+
+  .premium .pm-rv__list,
+  .premium .pm-rv__col {
+    gap: 16px;
+  }
+
+  .premium .pm-rv[data-cols="2"] .pm-rv__head,
+  .premium .pm-rv[data-cols="2"] .pm-rv__list,
+  .premium .pm-rv[data-cols="2"] .pm-rv__filter,
+  .premium .pm-rv[data-cols="2"] .pm-rv__summary {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .premium .pm-rv .pm-review__body {
+    padding: 20px;
+  }
+
+  .premium .pm-rv__more {
+    margin-top: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium .pm-rv .pm-review {
+    animation: none;
+  }
+
+  .premium .pm-rv__bar {
+    transition: none;
+  }
+}
+
+/* One-column list (columns_desktop "1"), laid out like the Judge.me widget the store used before:
+   stars on top, name + "verified" pill, title, text, product line in a grey box; reviews divided by hairlines */
+.premium .pm-rv[data-cols="1"] .pm-rv__col {
+  gap: 0;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review {
+  border: 0;
+  border-bottom: 1px solid var(--pm-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__body {
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__meta {
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__rating {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-left: 0;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__stars svg {
+  width: 18px;
+  height: 18px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__who > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__name {
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-review__verified {
+  margin-top: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--pm-ink);
+  border-radius: var(--pm-radius-pill);
+  color: var(--pm-ink);
+}
+
+.premium .pm-rv[data-cols="1"] .pm-rv__title {
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-rv__product {
+  padding: 12px 16px;
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-surface);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.premium .pm-rv[data-cols="1"] .pm-rv__product a {
+  color: var(--pm-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (min-width: 990px) {
+  .premium .pm-rv[data-cols="1"] .pm-rv__head,
+  .premium .pm-rv[data-cols="1"] .pm-rv__list,
+  .premium .pm-rv[data-cols="1"] .pm-rv__filter,
+  .premium .pm-rv[data-cols="1"] .pm-rv__summary {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* List layout: name/rating rows size to their content (the card layout's flex-basis would become a 120px height in a column) */
+.premium .pm-rv[data-cols="1"] .pm-review__who,
+.premium .pm-rv[data-cols="1"] .pm-review__rating {
+  flex: none;
+}

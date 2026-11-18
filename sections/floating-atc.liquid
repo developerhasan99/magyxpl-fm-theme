@@ -1,0 +1,122 @@
+{% liquid
+  comment
+    Default price shown in the bar: the 50 ml variant when the product has one
+    (matched case-insensitively, ignoring spaces: "50ML", "50Ml", "50 ML"), else the selected/first available one.
+    Alpine's syncGlobalPrices() keeps every .current-price in step with the buy box afterwards.
+  endcomment
+  assign selected_variant = product.selected_or_first_available_variant
+  for variant in product.variants
+    assign float_variant_key = variant.title | downcase | remove: ' '
+    if float_variant_key == '50ml'
+      assign selected_variant = variant
+      break
+    endif
+  endfor
+  # Store-managed titles can still be German: translate for the Polish storefront
+  capture float_title
+    render 'polish-store-text', text: product.title
+  endcapture
+  assign float_title = float_title | strip
+%}
+
+<style>
+  .nm-wishlist-open-list-button,
+  .woot--bubble-holder {
+    display: none;
+  }
+</style>
+
+<div id="floatingAtc" class="pm-float">
+  <div class="pm-float__inner">
+    <div class="pm-float__meta">
+      <img
+        src="{{ product.featured_image | image_url: width: 96, height: 96, crop: 'center' }}"
+        alt="{{ float_title }}"
+        width="48"
+        height="48"
+        class="pm-float__thumb"
+        loading="lazy">
+      <div class="pm-float__text">
+        <p class="pm-float__title">{{ float_title }}</p>
+        <p class="pm-float__price current-price">{{ selected_variant.price | money }}</p>
+      </div>
+    </div>
+    <button type="button" class="pm-btn pm-btn--primary pm-float__btn">
+      <span>{{ 'products.product.add_to_cart' | t }}</span>
+      <span class="pm-float__sep" aria-hidden="true">&middot;</span>
+      <span class="current-price">{{ selected_variant.price | money }}</span>
+    </button>
+  </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const atcBtn = document.querySelector('.cta_product_from_submit_btn');
+        const floatingAtc = document.getElementById('floatingAtc');
+        const floatingAtcBtn = document.querySelector('#floatingAtc button');
+
+        // Modify quiz button position
+        const quizButton = document.getElementById('scent-quiz-fab');
+
+        if(!atcBtn || !floatingAtc || !floatingAtcBtn) return;
+
+        // Observe the scrollToTarget's bottom crossing the viewport top
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                if (entry.boundingClientRect.bottom < 0) {
+                    // scrolled past (above viewport)
+                    floatingAtc.classList.add('active');
+
+                    if (quizButton) {
+                      quizButton.style.bottom = '90px';
+                    }
+                } else {
+                    // partially or fully visible in viewport
+                    floatingAtc.classList.remove('active');
+
+                    if (quizButton) {
+                      quizButton.style.bottom = 'calc(env(safe-area-inset-bottom) + 18px)';
+                    }
+                }
+                });
+            },
+            {
+                threshold: [0],
+                root: null,
+                rootMargin: '0px',
+            }
+        );
+
+        observer.observe(atcBtn);
+
+        floatingAtcBtn.addEventListener('click', () => {
+            // Scroll to top
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            // Create and dispatch a proper click event that will trigger existing listeners
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+            atcBtn.dispatchEvent(clickEvent);
+        });
+    });
+
+</script>
+
+{% schema %}
+  {
+    "name": "Floating ATC",
+    "tag": "section",
+    "settings": [],
+    "presets": [
+      {
+        "name": "Floating ATC"
+      }
+    ]
+  }
+{% endschema %}

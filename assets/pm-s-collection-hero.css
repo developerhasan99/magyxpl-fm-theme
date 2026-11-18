@@ -1,0 +1,235 @@
+/* pm-s-collection-hero.css (WP-D): sections/collection-hero.liquid, both layouts.
+   compact (collection.json): breadcrumb 11/16 muted, pm-title left, description 12/19 muted with a 3-line clamp
+   and a <details> "Read more"; padding 24/16 at 375, 40/24 from 990.
+   image (other collection templates): today's full-bleed hero, Figtree only, surface tones instead of the old greys. */
+
+.premium .pm-chero {
+  box-sizing: border-box;
+  color: rgb(var(--color-foreground));
+}
+
+/* 1. Compact layout */
+.premium .pm-chero--compact {
+  padding-top: 24px;
+  padding-bottom: 16px;
+}
+
+.premium .pm-chero__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--pm-muted);
+}
+
+.premium .pm-chero__crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.premium .pm-chero__crumbs a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.premium .pm-chero__crumbs .pm-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.8;
+}
+
+.premium .pm-chero__crumbs [aria-current] {
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-chero__rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-chero__title {
+  margin: 0;
+  text-align: left;
+  color: rgb(var(--color-foreground));
+}
+
+.premium .pm-chero__desc {
+  max-width: 720px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 19px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--pm-muted);
+}
+
+.premium .pm-chero__desc p {
+  margin: 0 0 8px;
+}
+
+.premium .pm-chero__desc p:last-child {
+  margin-bottom: 0;
+}
+
+.premium .pm-chero__details {
+  margin: 0;
+}
+
+.premium .pm-chero__summary {
+  display: block;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.premium .pm-chero__summary::-webkit-details-marker {
+  display: none;
+}
+
+.premium .pm-chero__clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.premium .pm-chero__details[open] .pm-chero__clamp {
+  display: block;
+  -webkit-line-clamp: none;
+  overflow: visible;
+}
+
+.premium .pm-chero__toggle {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--color-foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.premium .pm-chero__less {
+  display: none;
+}
+
+.premium .pm-chero__details[open] .pm-chero__more {
+  display: none;
+}
+
+.premium .pm-chero__details[open] .pm-chero__less {
+  display: inline;
+}
+
+/* 2. Image layout (restyled: surface placeholder, surface scrim, Figtree title) */
+.premium .pm-chero--image {
+  background-color: var(--pm-surface);
+}
+
+.premium .pm-chero__scrim {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: linear-gradient(180deg, rgba(246, 246, 246, 0) 38%, rgba(246, 246, 246, 0.82) 58%, rgba(246, 246, 246, 0.97) 74%, #f6f6f6 100%);
+  pointer-events: none;
+}
+
+.premium .pm-chero--image .pm-chero__title {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 2.8vw, 44px);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.premium .pm-chero--image .pm-chero__desc {
+  max-width: 400px;
+  margin: 0;
+  font-size: var(--pm-fs-body-lg);
+  line-height: var(--pm-lh-body-lg);
+  color: rgb(var(--color-foreground));
+}
+
+@media (min-width: 750px) {
+  .premium .pm-chero__scrim {
+    background: linear-gradient(90deg, rgba(246, 246, 246, 0.97) 0%, rgba(246, 246, 246, 0.93) 30%, rgba(246, 246, 246, 0.72) 46%, rgba(246, 246, 246, 0) 68%);
+  }
+}
+
+@media (min-width: 990px) {
+  .premium .pm-chero--compact {
+    padding-top: 40px;
+    padding-bottom: 24px;
+  }
+}
+
+/* 3. main-collection-banner (tryscent.eu collection.json uses the banner, not collection-hero): the same compact
+      look on Dawn's collection-hero markup, plus the sentence fold (mgx-cdesc, folded by the section's inline
+      script). Selectors carry .pm-cbanner + one Dawn class so they beat component-collection-hero.css. */
+.premium .pm-cbanner {
+  align-items: flex-start;
+}
+
+.premium .pm-cbanner .collection-hero__text-wrapper.pm-chero--compact {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.premium .pm-cbanner .collection-hero__title.pm-chero__title {
+  margin: 0;
+  text-align: left;
+}
+
+.premium .pm-cbanner .collection-hero__description.pm-chero__desc {
+  max-width: 720px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 19px;
+  text-align: left;
+  color: var(--pm-muted);
+}
+
+.premium .pm-cbanner .mgx-cdesc__text p {
+  margin: 0 0 8px;
+}
+
+.premium .pm-cbanner .mgx-cdesc__text > :last-child,
+.premium .pm-cbanner .mgx-cdesc:not(.is-open) .mgx-cdesc__cut {
+  margin-bottom: 0;
+}
+
+.premium .pm-cbanner .mgx-cdesc__toggle.pm-chero__toggle {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.premium .pm-cbanner .mgx-cdesc__toggle:focus-visible {
+  outline: 2px solid var(--pm-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.premium .pm-cbanner .mgx-cdesc__toggle[hidden] {
+  display: none;
+}
+
+.premium .collection-hero--with-image .pm-cbanner .pm-chero--compact {
+  padding-bottom: 24px;
+}
