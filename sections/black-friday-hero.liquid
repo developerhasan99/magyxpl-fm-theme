@@ -1,0 +1,119 @@
+{{ 'pm-s-bf-hero.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign bf_font = section.settings.display_font
+  assign bf_desktop = section.settings.image
+  assign bf_mobile = section.settings.mobile_image | default: bf_desktop
+-%}
+{%- style -%}
+  {{ bf_font | font_face: font_display: 'swap' }}
+  #{{ section.id }} {
+    --bf-accent: {{ section.settings.accent_color }};
+    --bf-accent-rgb: {{ section.settings.accent_color.red }}, {{ section.settings.accent_color.green }}, {{ section.settings.accent_color.blue }};
+    --bf-bg: {{ section.settings.background_color }};
+    --bf-display: {{ bf_font.family }}, {{ bf_font.fallback_families }};
+    --bf-min: {{ section.settings.min_height }}px;
+  }
+{%- endstyle -%}
+
+<section id="{{ section.id }}" class="bfh">
+  <div class="bfh__inner page-width">
+    {%- if section.settings.eyebrow != blank -%}
+      <p class="bfh__eyebrow"><span class="bfh__dot" aria-hidden="true"></span>{{ section.settings.eyebrow | escape }}</p>
+    {%- endif -%}
+    {%- if section.settings.title != blank -%}
+      <h1 class="bfh__title">{{ section.settings.title | escape }}</h1>
+    {%- endif -%}
+    {%- if section.settings.subtitle != blank -%}
+      <p class="bfh__subtitle">{{ section.settings.subtitle | escape }}</p>
+    {%- endif -%}
+
+    {%- comment -%} One art-directed picture: in the copy flow on phones (between headline and offers), full-bleed backdrop from 750px {%- endcomment -%}
+    {%- if bf_desktop != blank -%}
+      <picture class="bfh__media">
+        <source
+          media="(max-width: 749px)"
+          srcset="{{ bf_mobile | image_url: width: 750 }} 750w, {{ bf_mobile | image_url: width: 1125 }} 1125w"
+          sizes="100vw"
+        >
+        {{ bf_desktop | image_url: width: 1920 | image_tag: widths: '1100, 1440, 1920, 2880', sizes: '100vw', class: 'bfh__img', loading: 'eager', fetchpriority: 'high', alt: section.settings.title }}
+      </picture>
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+      <ul class="bfh__tiers" role="list">
+        {%- for block in section.blocks -%}
+          <li class="bfh__tier{% if block.settings.highlight %} bfh__tier--hot{% endif %}" {{ block.shopify_attributes }}>
+            {%- if block.settings.badge != blank -%}<span class="bfh__badge">{{ block.settings.badge | escape }}</span>{%- endif -%}
+            <span class="bfh__tier-label">{{ block.settings.label | escape }}</span>
+            <span class="bfh__tier-value">{{ block.settings.value | escape }}</span>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    {%- if section.settings.note != blank -%}
+      <div class="bfh__note">{{ section.settings.note }}</div>
+    {%- endif -%}
+
+    <div class="bfh__actions">
+      {%- if section.settings.button_text != blank -%}
+        <a href="{{ section.settings.button_link | default: routes.all_products_collection_url }}" class="bfh__btn">{{ section.settings.button_text | escape }}</a>
+      {%- endif -%}
+      {%- if section.settings.shipping_text != blank -%}
+        <p class="bfh__ship">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4h13v12H1zM14 8h4l4 4v4h-8"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg>
+          {{ section.settings.shipping_text | escape }}
+        </p>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Black Friday Home Hero",
+  "class": "black-friday-hero premium",
+  "max_blocks": 6,
+  "settings": [
+    { "type": "header", "content": "Images" },
+    { "type": "image_picker", "id": "image", "label": "Desktop image", "info": "Full-bleed backdrop from 750px. Keep the left side dark, the copy sits there." },
+    { "type": "image_picker", "id": "mobile_image", "label": "Mobile image", "info": "Shown between the headline and the offers on phones. Falls back to the desktop image." },
+    { "type": "range", "id": "min_height", "min": 480, "max": 800, "step": 20, "unit": "px", "label": "Minimum height (desktop)", "default": 600 },
+    { "type": "header", "content": "Style" },
+    { "type": "color", "id": "accent_color", "label": "Accent (neon) colour", "default": "#ff3b3b" },
+    { "type": "color", "id": "background_color", "label": "Background colour", "default": "#070707" },
+    { "type": "font_picker", "id": "display_font", "label": "Title and discount font", "default": "anton_n4" },
+    { "type": "header", "content": "Copy" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Tylko w tym tygodniu" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Black Friday" },
+    { "type": "text", "id": "subtitle", "label": "Subtitle", "default": "Im więcej kupujesz, tym więcej oszczędzasz." },
+    { "type": "richtext", "id": "note", "label": "Note under the discounts", "default": "<p>Rabat zostanie naliczony automatycznie przy kasie.</p>" },
+    { "type": "text", "id": "button_text", "label": "Button text", "default": "Kup na Black Friday" },
+    { "type": "url", "id": "button_link", "label": "Button link" },
+    { "type": "text", "id": "shipping_text", "label": "Shipping line", "default": "Darmowa dostawa od 150 PLN" }
+  ],
+  "blocks": [
+    {
+      "type": "tier",
+      "name": "Discount",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Kup 2" },
+        { "type": "text", "id": "value", "label": "Discount", "default": "25 %" },
+        { "type": "text", "id": "badge", "label": "Badge (optional)", "info": "Small tag on the top edge, e.g. Najlepsza oferta" },
+        { "type": "checkbox", "id": "highlight", "label": "Highlight (filled neon)", "default": false }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Black Friday Home Hero",
+      "blocks": [
+        { "type": "tier", "settings": { "label": "Kup 2", "value": "25 %" } },
+        { "type": "tier", "settings": { "label": "Kup 4", "value": "30 %" } },
+        { "type": "tier", "settings": { "label": "Kup 6", "value": "35 %" } },
+        { "type": "tier", "settings": { "label": "Kup 8+", "value": "40 %", "highlight": true } }
+      ]
+    }
+  ]
+}
+{% endschema %}
