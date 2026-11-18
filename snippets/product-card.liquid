@@ -12,8 +12,8 @@
   FM contract kept for the price-test app: the outer element stays an <a>, the price span keeps .ab-current-price,
   and no .product-card-wrapper[data-variant-id] is added here.
   Price = the first available variant (sold-out products fall back to the first variant; the card still links).
-  Badges (top-left, FM): Sold out / Bestseller as white pm-badge, the first line of settings.product_card_promo_text
-  as an ink pm-badge ("2 + 1 GRATIS"), except on products tagged Bundle_Price_Show (the bundles).
+  Badges (top-left, FM): Sold out / Bestseller as white pm-badge. The offer text (settings.product_card_promo_text)
+  shows only in the bottom strip, snippets/card-promo-marquee.liquid.
 
   tryscent.eu store data:
   - titles always go through polish-store-text (some admin titles are still German);
@@ -63,21 +63,11 @@
     assign pm_bestseller = true
   endif
 
-  assign pm_promo = ''
-  unless product.tags contains 'Bundle_Price_Show'
-    if settings.product_card_promo_text != blank
-      assign pm_promo = settings.product_card_promo_text | newline_to_br | split: '<br />' | first | strip_html | strip
-    endif
-  endunless
-
   assign pm_badge_count = 0
   if product.available == false
     assign pm_badge_count = pm_badge_count | plus: 1
   endif
   if pm_bestseller
-    assign pm_badge_count = pm_badge_count | plus: 1
-  endif
-  if pm_promo != blank
     assign pm_badge_count = pm_badge_count | plus: 1
   endif
 
@@ -108,9 +98,6 @@
         {%- if pm_bestseller -%}
           <span class="pm-badge">{{ 'premium.card.bestseller' | t }}</span>
         {%- endif -%}
-        {%- if pm_promo != blank -%}
-          <span class="pm-badge pm-badge--ink">{{ pm_promo }}</span>
-        {%- endif -%}
       </div>
     {%- endif -%}
 
@@ -118,6 +105,7 @@
       <span class="pm-card__quick-label">{{ 'premium.card.shop_now' | t }}</span>
       {%- render 'pm-icon', icon: 'arrow-right', size: 16 -%}
     </span>
+    {%- render 'card-promo-marquee', product: product -%}
   </div>
 
   <div class="pm-card__body">

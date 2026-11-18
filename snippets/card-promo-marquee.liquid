@@ -1,0 +1,26 @@
+{% comment %}
+  Rolling offer strip pinned to the bottom of a product card image. Text: theme setting product_card_promo_text
+  (one offer per line). Skipped for products tagged Bundle_Price_Show. Styles: assets/pm-card.css (loaded site-wide).
+  The parent media box must be position: relative.
+
+  Accepts:
+  - product: {Object} product
+{% endcomment %}
+{%- unless product.tags contains 'Bundle_Price_Show' or settings.product_card_promo_text == blank -%}
+  {%- assign promo_lines = settings.product_card_promo_text | newline_to_br | split: '<br />' -%}
+  <div class="card__promo-marquee" aria-label="{{ settings.product_card_promo_text | strip_newlines | escape }}">
+    <div class="card__promo-marquee-rail">
+      {%- for group in (1..2) -%}
+        <div class="card__promo-marquee-group"{% if group == 2 %} aria-hidden="true"{% endif %}>
+          {%- for line in promo_lines -%}
+            {%- assign line = line | strip -%}
+            {%- if line != blank -%}
+              <span class="card__promo-marquee-text">{{ line }}</span>
+              <span class="card__promo-marquee-dot" aria-hidden="true"></span>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endunless -%}

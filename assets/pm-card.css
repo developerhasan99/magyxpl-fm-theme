@@ -602,3 +602,73 @@
   font-size: 11px;
   color: var(--pm-muted);
 }
+
+/* 11. Card promo marquee (snippets/card-promo-marquee.liquid): rolling offer strip on the bottom edge of the card image.
+   Used by every card (fm-grid-card and the Dawn horizontal card-product), so it is not scoped to .premium and lives here because this file loads site-wide. */
+.card__promo-marquee {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  overflow: hidden;
+  padding-block: 7px;
+  white-space: nowrap;
+  /* Black Friday: black strip, neon-red hairline on top, glowing red dots (same red as the Black Friday hero) */
+  background: linear-gradient(180deg, #1a0505 0%, #070707 100%);
+  border-top: 1px solid #ff3b3b;
+  box-shadow: 0 -4px 14px rgba(255, 59, 59, 0.45);
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 59, 59, 0.55);
+}
+
+/* FM quick square sits above the strip instead of on it */
+.premium .pm-card__media:has(.card__promo-marquee) .pm-card__quick {
+  bottom: 40px;
+}
+
+@keyframes cardPromoMarquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.card__promo-marquee-rail {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  will-change: transform;
+  animation: cardPromoMarquee 10s linear infinite;
+}
+
+.card__promo-marquee-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding-inline-end: 10px;
+}
+
+.card__promo-marquee-text {
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.card__promo-marquee-dot {
+  display: block;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ff3b3b;
+  box-shadow: 0 0 6px 1px rgba(255, 59, 59, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card__promo-marquee-rail {
+    animation: none;
+    transform: none;
+  }
+}
