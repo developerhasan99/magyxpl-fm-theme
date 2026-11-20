@@ -171,9 +171,9 @@
         "collapsible_tab_T6Fk9z": {
           "type": "collapsible_tab",
           "settings": {
-            "heading": "Czy to Eau de Parfum?",
+            "heading": "Czy to Elixir de Parfum?",
             "icon": "none",
-            "content": "<p>Nasze perfumy łączą cechy Eau de Parfum i ekstraktu perfum (Extrait de Parfum), zawierając 20% olejków zapachowych (Eau de Parfum).<br/>Woda toaletowa (EDT) zawiera ich od 5% do 8%.<br/>Ekstrakt perfum zawiera natomiast od 20% do 40%.</p><p><strong>To idealne stężenie, dzięki któremu zapach utrzymuje się od 8 do ponad 12 godzin, a jednocześnie nie jest zbyt intensywny ani przytłaczający.</strong></p>",
+            "content": "<p>Nasze perfumy łączą cechy Elixir de Parfum i ekstraktu perfum (Extrait de Parfum), zawierając 35% olejków zapachowych (Elixir de Parfum).<br/>Woda toaletowa (EDT) zawiera ich od 5% do 8%.<br/>Ekstrakt perfum zawiera natomiast od 20% do 40%.</p><p><strong>To idealne stężenie, dzięki któremu zapach utrzymuje się od 8 do ponad 12 godzin, a jednocześnie nie jest zbyt intensywny ani przytłaczający.</strong></p>",
             "page": ""
           }
         },
@@ -193,16 +193,16 @@
           "settings": {
             "heading": "Czym jest odpowiednik perfum?",
             "icon": "none",
-            "content": "<p>Ten zapach jest inspirowany tymi samymi nutami i należy do tej samej rodziny zapachowej — stężenie olejków wynoszące 20% (Eau de Parfum) zapewnia wyjątkową trwałość.</p>",
+            "content": "<p>Ten zapach jest inspirowany tymi samymi nutami i należy do tej samej rodziny zapachowej — stężenie olejków wynoszące 35% (Elixir de Parfum) zapewnia wyjątkową trwałość.</p>",
             "page": ""
           }
         },
         "collapsible_tab_HiNKBa": {
           "type": "collapsible_tab",
           "settings": {
-            "heading": "Co oznacza stężenie olejków zapachowych 20% (Eau de Parfum)?",
+            "heading": "Co oznacza stężenie olejków zapachowych 35% (Elixir de Parfum)?",
             "icon": "none",
-            "content": "<p>Nasze kompozycje zawierają 20% olejków zapachowych, czyli stężenie Eau de Parfum. Woda toaletowa (EDT) zawiera ich znacznie mniej.</p>",
+            "content": "<p>Nasze kompozycje zawierają 35% olejków zapachowych, czyli stężenie Elixir de Parfum. Woda toaletowa (EDT) zawiera ich znacznie mniej.</p>",
             "page": ""
           }
         },
