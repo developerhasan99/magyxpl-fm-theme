@@ -158,6 +158,14 @@
     "tabs_best": {
       "type": "home-product-tabs",
       "blocks": {
+        "tab_F78aJ9": {
+          "type": "tab",
+          "settings": {
+            "title": "NOWOŚĆ: Kolekcja Utique",
+            "collection": "black-utique",
+            "filter": ""
+          }
+        },
         "tab_bestsellers": {
           "type": "tab",
           "settings": {
@@ -176,6 +184,7 @@
         }
       },
       "block_order": [
+        "tab_F78aJ9",
         "tab_bestsellers",
         "tab_new"
       ],
